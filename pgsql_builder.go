@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (r *DB) Get(p interface{}) ([]map[string]interface{}, error) {
+func (r *DB) Get() ([]map[string]interface{}, error) {
 	builder := r.Builder
 	if builder.table == "" {
 		return nil, fmt.Errorf("sql: there was no Table() call with table name set")
@@ -143,13 +143,16 @@ func prepareInsert(data map[string]interface{}) (columns []string, values []inte
 
 		switch v := value.(type) {
 		case string:
-			values = append(values, "'"+v+"'")
+			values = append(values, v)
 			break
 		case int:
 			values = append(values, strconv.FormatInt(int64(v), 10))
 			break
 		case float64:
 			values = append(values, fmt.Sprintf("%g", v))
+			break
+		case int64:
+			values = append(values, strconv.FormatInt(v, 10))
 			break
 		}
 

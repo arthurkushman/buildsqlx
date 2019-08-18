@@ -1,41 +1,64 @@
 package arsqlx
 
 import (
-	"fmt"
 	_ "github.com/lib/pq" // here
 	"testing"
 )
 
-type Test struct {
-	Foo string `db:"foo"`
-	Bar string `db:"bar"`
-	Baz int64  `db:"baz"`
-}
+const TestTable = "test"
 
 var db = NewDb(NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
 
-func TestSelectAndLimit(t *testing.T) {
-	test := Test{}
-	qDb := db.Table("test").Select("foo", "bar")
+var dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
 
-	res, err := qDb.AddSelect("baz").Limit(15).Get(&test)
+func TestSelectAndLimit(t *testing.T) {
+	db.Truncate(TestTable)
+
+	db.Table("test").Insert(dataMap)
+
+	qDb := db.Table(TestTable).Select("foo", "bar")
+
+	res, err := qDb.AddSelect("baz").Limit(15).Get()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, v := range res {
-		fmt.Printf("struct: %v", v)
+	for k, mapVal := range dataMap {
+		for _, v := range res {
+			if v[k] != mapVal {
+				t.Fatalf("want: %T, got: %T", mapVal, v[k])
+			}
+		}
 	}
+
+	db.Truncate(TestTable)
 }
 
 func TestInsert(t *testing.T) {
-	err := db.Table("test").Insert(map[string]interface{}{"foo": "blaaaaa 123", "bar": "bzzzzzzzzzzz", "baz": 1234})
+	db.Truncate(TestTable)
+
+	err := db.Table("test").Insert(dataMap)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Get()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k, mapVal := range dataMap {
+		for _, v := range res {
+			if v[k] != mapVal {
+				t.Fatalf("want: %v, got: %v", mapVal, v[k])
+			}
+		}
+	}
+
+	db.Truncate(TestTable)
 }
 
 func TestSelectRaw(t *testing.T) {
