@@ -1,7 +1,7 @@
 package arsqlx
 
 import (
-	_ "github.com/lib/pq" // here
+	_ "github.com/lib/pq"
 	"testing"
 )
 
