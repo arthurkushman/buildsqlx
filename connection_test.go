@@ -61,6 +61,40 @@ func TestInsert(t *testing.T) {
 	db.Truncate(TestTable)
 }
 
+var batchData = []map[string]interface{}{
+	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123},
+	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": 1234},
+	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
+}
+
+func TestInsertBatch(t *testing.T) {
+	db.Truncate(TestTable)
+
+	err := db.Table("test").InsertBatch(batchData)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := db.Table(TestTable).Select("foo", "bar", "baz").OrderBy("foo", "ASC").Get()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, mapVal := range batchData {
+		for k, mV := range mapVal {
+			for _, v := range res {
+				if v[k] != mV {
+					t.Fatalf("want: %v, got: %v", mV, v[k])
+				}
+			}
+		}
+	}
+
+	db.Truncate(TestTable)
+}
+
 func TestSelectRaw(t *testing.T) {
 
 }

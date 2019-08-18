@@ -77,6 +77,24 @@ func (r *DB) Select(args ...string) *DB {
 	return r
 }
 
+// GroupBy adds ORDER BY expression to SQL stmt
+func (r *DB) OrderBy(column string, direction string) *DB {
+	if len(r.Builder.orderBy) == 0 {
+		r.Builder.orderBy = make(map[string]string)
+	}
+
+	r.Builder.orderBy[column] = direction
+
+	return r
+}
+
+// GroupBy adds GROUP BY expression to SQL stmt
+func (r *DB) GroupBy(expr string) *DB {
+	r.Builder.groupBy = expr
+
+	return r
+}
+
 // AddSelect accepts additional columns to select from a table
 func (r *DB) AddSelect(args ...string) *DB {
 	for _, arg := range args {

@@ -12,7 +12,7 @@ import (
 
 qDb := db.Table(TestTable).Select("foo", "bar")
 
-res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar").Limit(15).Offset(5).Get()
+res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar", "DESC").Limit(15).Offset(5).Get()
 ```
 
 ## Where, AndWhere, OrWhere clauses
@@ -37,4 +37,11 @@ err := db.Table("test").Insert(map[string]interface{}{"foo": "foo foo foo", "bar
 
 // insert returning id
 id, err := db.Table("test").InsertGetId(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
+
+// batch insert 
+err := db.Table("test").InsertBatch([]map[string]interface{}{
+                                    	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123},
+                                    	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": 1234},
+                                    	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
+                                    })
 ```

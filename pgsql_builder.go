@@ -2,6 +2,8 @@ package arsqlx
 
 import (
 	"fmt"
+	"github.com/lib/pq"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -95,6 +97,7 @@ func (r *Builder) buildSelect() string {
 	return query
 }
 
+// Insert inserts one row with param bindings
 func (r *DB) Insert(data map[string]interface{}) error {
 	builder := r.Builder
 	if builder.table == "" {
@@ -114,6 +117,7 @@ func (r *DB) Insert(data map[string]interface{}) error {
 	return nil
 }
 
+// InsertGetId inserts one row with param bindings and returning id
 func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 	builder := r.Builder
 	if builder.table == "" {
@@ -158,6 +162,90 @@ func prepareInsert(data map[string]interface{}) (columns []string, values []inte
 
 		bindings = append(bindings, "$"+strconv.FormatInt(int64(i), 10))
 		i++
+	}
+
+	return
+}
+
+// InsertBatch inserts multiple rows based on transaction
+func (r *DB) InsertBatch(data []map[string]interface{}) error {
+	builder := r.Builder
+	if builder.table == "" {
+		return fmt.Errorf("sql: there was no Table() call with table name set")
+	}
+
+	txn, err := r.Sql().Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	columns, values := prepareInsertBatch(data)
+
+	stmt, err := txn.Prepare(pq.CopyIn(builder.table, columns...))
+	if err != nil {
+		return err
+	}
+
+	for _, value := range values {
+		_, err = stmt.Exec(value...)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	err = stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// prepareInsert prepares slices to split in favor of INSERT sql statement
+func prepareInsertBatch(data []map[string]interface{}) (columns []string, values [][]interface{}) {
+	values = make([][]interface{}, len(data))
+	colToIdx := make(map[string]int)
+
+	i := 0
+	for k, v := range data {
+		values[k] = make([]interface{}, len(v))
+
+		for column, value := range v {
+			if k == 0 {
+				columns = append(columns, column)
+				// todo: don't know yet how to match them explicitly (it is bad idea, but it works well now)
+				colToIdx[column] = i
+				i++
+			}
+
+			switch casted := value.(type) {
+			case string:
+				fmt.Println(casted)
+				values[k][colToIdx[column]] = casted
+				break
+			case int:
+				fmt.Println(casted)
+				values[k][colToIdx[column]] = strconv.FormatInt(int64(casted), 10)
+				break
+			case float64:
+				values[k][colToIdx[column]] = fmt.Sprintf("%g", casted)
+				break
+			case int64:
+				fmt.Println(casted)
+				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
+				break
+			}
+		}
 	}
 
 	return
