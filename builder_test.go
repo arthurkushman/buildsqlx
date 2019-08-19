@@ -1,7 +1,6 @@
 package arsqlx
 
 import (
-	"fmt"
 	_ "github.com/lib/pq"
 	"testing"
 )
@@ -107,7 +106,6 @@ func TestWhereAndOr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(res)
 	if res[0]["foo"] != cmp {
 		t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
 	}
