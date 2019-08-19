@@ -62,12 +62,12 @@ func TestInsert(t *testing.T) {
 }
 
 var batchData = []map[string]interface{}{
-	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123},
-	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": 1234},
-	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
+	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)},
+	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": int64(1234)},
+	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": int64(12345)},
 }
 
-func TestInsertBatch(t *testing.T) {
+func TestInsertBatchSelectMultiple(t *testing.T) {
 	db.Truncate(TestTable)
 
 	err := db.Table("test").InsertBatch(batchData)
@@ -82,12 +82,10 @@ func TestInsertBatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, mapVal := range batchData {
+	for mapKey, mapVal := range batchData {
 		for k, mV := range mapVal {
-			for _, v := range res {
-				if v[k] != mV {
-					t.Fatalf("want: %v, got: %v", mV, v[k])
-				}
+			if res[mapKey][k] != mV {
+				t.Fatalf("want: %T, got: %T", mV, res[mapKey][k])
 			}
 		}
 	}
