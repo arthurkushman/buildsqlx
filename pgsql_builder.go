@@ -27,8 +27,9 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	// collecting data from struct with fields
 	var res []map[string]interface{}
 
-	collect := make(map[string]interface{})
 	for rows.Next() {
+		collect := make(map[string]interface{})
+
 		for i := range columns {
 			valuePtrs[i] = &values[i]
 		}
@@ -230,18 +231,15 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 
 			switch casted := value.(type) {
 			case string:
-				fmt.Println(casted)
 				values[k][colToIdx[column]] = casted
 				break
 			case int:
-				fmt.Println(casted)
 				values[k][colToIdx[column]] = strconv.FormatInt(int64(casted), 10)
 				break
 			case float64:
 				values[k][colToIdx[column]] = fmt.Sprintf("%g", casted)
 				break
 			case int64:
-				fmt.Println(casted)
 				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
 				break
 			}
