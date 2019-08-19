@@ -2,6 +2,8 @@ package arsqlx
 
 import (
 	"database/sql"
+	"fmt"
+	"strconv"
 )
 
 type Builder struct {
@@ -112,26 +114,41 @@ func (r *DB) SelectRow(row string) *DB {
 }
 
 // Where accepts left operand-operator-right operand to apply them to where clause
-func (r *DB) Where(args []string) *DB {
-	r.Builder.where = args[0] + " " + args[1] + " " + args[2]
+func (r *DB) Where(operand string, operator string, val interface{}) *DB {
+	r.Builder.where = operand + " " + operator + " " + convertToStr(val)
 
 	return r
 }
 
 // Where accepts left operand-operator-right operand to apply them to where clause
 // with AND logical operator
-func (r *DB) AndWhere(args []string) *DB {
-	r.Builder.where += " AND " + args[0] + " " + args[1] + " " + args[2]
+func (r *DB) AndWhere(operand string, operator string, val interface{}) *DB {
+	r.Builder.where += " AND " + operand + " " + operator + " " + convertToStr(val)
 
 	return r
 }
 
 // OrWhere accepts left operand-operator-right operand to apply them to where clause
 // with OR logical operator
-func (r *DB) OrWhere(args []string) *DB {
-	r.Builder.where += " OR " + args[0] + " " + args[1] + " " + args[2]
+func (r *DB) OrWhere(operand string, operator string, val interface{}) *DB {
+	r.Builder.where += " OR " + operand + " " + operator + " " + convertToStr(val)
 
 	return r
+}
+
+func convertToStr(val interface{}) string {
+	switch v := val.(type) {
+	case string:
+		return "'" + v + "'"
+	case int:
+		return strconv.Itoa(v)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case float64:
+		return fmt.Sprintf("%g", v)
+	}
+
+	return ""
 }
 
 // WhereRaw accepts custom string to apply it to where clause
