@@ -45,3 +45,20 @@ err := db.Table("test").InsertBatch([]map[string]interface{}{
                                     	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
                                     })
 ```
+
+## Drop, Truncate, Rename
+```go
+package yourpackage
+
+import (
+	_ "github.com/lib/pq"
+)
+
+db.Drop("table_name")
+
+db.DropIfExists("table_name")
+
+db.Truncate("table_name")
+
+db.Rename("table_name1", "table_name2")
+```
