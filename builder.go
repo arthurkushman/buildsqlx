@@ -113,6 +113,18 @@ func (r *DB) SelectRow(row string) *DB {
 	return r
 }
 
+func (r *DB) LeftJoin(table string, left string, operator string, right string) *DB {
+	r.Builder.join = append(r.Builder.join, " LEFT JOIN "+table+" ON "+left+operator+right+" ")
+
+	return r
+}
+
+func (r *DB) RightJoin(table string, left string, operator string, right string) *DB {
+	r.Builder.join = append(r.Builder.join, " RIGHT JOIN "+table+" ON "+left+operator+right+" ")
+
+	return r
+}
+
 // Where accepts left operand-operator-right operand to apply them to where clause
 func (r *DB) Where(operand string, operator string, val interface{}) *DB {
 	r.Builder.where = operand + " " + operator + " " + convertToStr(val)
