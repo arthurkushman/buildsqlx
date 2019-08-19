@@ -1,6 +1,7 @@
 package arsqlx
 
 import (
+	"fmt"
 	_ "github.com/lib/pq"
 	"testing"
 )
@@ -93,10 +94,23 @@ func TestInsertBatchSelectMultiple(t *testing.T) {
 	db.Truncate(TestTable)
 }
 
-func TestSelectRaw(t *testing.T) {
-
-}
-
 func TestWhereAndOr(t *testing.T) {
+	var cmp = "foo foo foo"
 
+	db.Truncate(TestTable)
+
+	err := db.Table("test").InsertBatch(batchData)
+
+	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(res)
+	if res[0]["foo"] != cmp {
+		t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
+	}
+
+	db.Truncate(TestTable)
 }

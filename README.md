@@ -24,7 +24,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where([]string{"foo", "=", "foo foo foo"}).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", "baz baz baz").Get()
+res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
 ```
 
 ## Inserts
