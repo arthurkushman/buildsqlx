@@ -112,3 +112,39 @@ func TestWhereAndOr(t *testing.T) {
 
 	db.Truncate(TestTable)
 }
+
+//var users = `create table users (id serial primary key, name varchar(128) not null, points integer)`
+//
+//var posts = `create table posts (id serial primary key, title varchar(128) not null, post text)`
+
+var batchUsers = []map[string]interface{}{
+	0: {"name": "Alex Shmidt", "points": int64(123)},
+	1: {"name": "Darth Vader", "points": int64(1234)},
+	2: {"name": "Dead Beaf", "points": int64(12345)},
+}
+
+var batchPosts = []map[string]interface{}{
+	0: {"title": "ttl1", "points": int64(123)},
+	1: {"title": "ttl2", "points": int64(1234)},
+	2: {"title": "ttl3", "points": int64(12345)},
+}
+
+func TestJoins(t *testing.T) {
+	db.Truncate(TestTable)
+
+	err := db.Table("users").InsertBatch(batchUsers)
+
+	err := db.Table("users").InsertBatch(batchPosts)
+
+	res, err := db.Table("users").Select("text").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res[0]["foo"] != cmp {
+		t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
+	}
+
+	db.Truncate(TestTable)
+}
