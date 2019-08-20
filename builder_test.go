@@ -1,7 +1,6 @@
 package arsqlx
 
 import (
-	"fmt"
 	_ "github.com/lib/pq"
 	"testing"
 )
@@ -119,42 +118,50 @@ func TestWhereAndOr(t *testing.T) {
 //var posts = `create table posts (id serial primary key, title varchar(128) not null, post text, user_id integer)`
 
 var batchUsers = []map[string]interface{}{
-	0: {"name": "Alex Shmidt", "points": int64(123)},
-	1: {"name": "Darth Vader", "points": int64(1234)},
-	2: {"name": "Dead Beaf", "points": int64(12345)},
-}
-
-var batchPosts = []map[string]interface{}{
-	0: {"title": "ttl1", "post": "foo bar baz", "user_id": 1},
-	1: {"title": "ttl2", "post": "foo bar baz", "user_id": 2},
-	2: {"title": "ttl3", "post": "foo bar baz", "user_id": 2},
+	0: {"id": int64(1), "name": "Alex Shmidt", "points": int64(123)},
+	1: {"id": int64(2), "name": "Darth Vader", "points": int64(1234)},
+	2: {"id": int64(3), "name": "Dead Beaf", "points": int64(12345)},
 }
 
 func TestJoins(t *testing.T) {
-	db.Truncate(TestTable)
+	db.Truncate("users")
+	db.Truncate("posts")
 
-	err := db.Table("users").InsertBatch(batchUsers)
+	var batchPosts []map[string]interface{}
+	for _, v := range batchUsers {
+		id, err := db.Table("users").InsertGetId(v)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		batchPosts = append(batchPosts, map[string]interface{}{
+			"title": "ttl", "post": "foo bar baz", "user_id": id,
+		})
+	}
+
+	err := db.Table("posts").InsertBatch(batchPosts)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = db.Table("posts").InsertBatch(batchPosts)
+	res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	res, err := db.Table("users").Select("name", "post").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
+	for k, val := range res {
+		if val["name"] != batchUsers[k]["name"] {
+			t.Fatalf("want: %s, got: %s", val["name"], batchUsers[k]["name"])
+		}
 
-	if err != nil {
-		t.Fatal(err)
+		if val["user_id"] != batchUsers[k]["id"] {
+			t.Fatalf("want: %d, got: %d", val["user_id"], batchUsers[k]["id"])
+		}
 	}
 
-	fmt.Println(res)
-	//if res[0]["foo"] != cmp {
-	//	t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
-	//}
-
-	db.Truncate(TestTable)
+	db.Truncate("users")
+	db.Truncate("posts")
 }

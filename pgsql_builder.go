@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Get builds all sql statements chained before and executes query collecting data to the slice
 func (r *DB) Get() ([]map[string]interface{}, error) {
 	builder := r.Builder
 	if builder.table == "" {
@@ -58,7 +59,7 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 }
 
 // buildSelect constructs a query for select statement
-func (r *Builder) buildSelect() string {
+func (r *builder) buildSelect() string {
 	query := "SELECT " + strings.Join(r.columns, ", ") + " FROM " + r.table
 
 	for _, j := range r.join {
@@ -245,6 +246,9 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 				break
 			case int64:
 				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
+				break
+			case uint64:
+				values[k][colToIdx[column]] = strconv.FormatUint(casted, 10)
 				break
 			}
 		}

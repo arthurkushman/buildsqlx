@@ -46,6 +46,11 @@ res, err := db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp
 You may chain where constraints together as well as add or clauses to the query. 
 The orWhere method accepts the same arguments as the where method.
 
+## Joins
+```go
+res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
+```
+
 ## Inserts
 
 The query builder also provides an insert method for inserting records into the database table. 

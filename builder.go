@@ -6,7 +6,8 @@ import (
 	"strconv"
 )
 
-type Builder struct {
+// inner type to build qualified sql
+type builder struct {
 	where      string
 	whereNamed map[string]interface{}
 	table      string
@@ -21,19 +22,14 @@ type Builder struct {
 	limit      int64
 }
 
+// DB is an entity that composite builder and Conn types
 type DB struct {
-	Builder *Builder
+	Builder *builder
 	Conn    *Connection
 }
 
-type Where struct {
-	left  string
-	op    string
-	right string
-}
-
-func NewBuilder() *Builder {
-	return &Builder{
+func newBuilder() *builder {
+	return &builder{
 		columns: []string{"*"},
 	}
 }
@@ -42,8 +38,9 @@ func (r *DB) Sql() *sql.DB {
 	return r.Conn.db
 }
 
+// NewDb constructs default DB structure
 func NewDb(c *Connection) *DB {
-	b := NewBuilder()
+	b := newBuilder()
 	return &DB{Builder: b, Conn: c}
 }
 
@@ -70,10 +67,10 @@ func (r *DB) Select(args ...string) *DB {
 	r.Builder.columns = append(r.Builder.columns, args...)
 	//for k, arg := range args {
 	//	if k == 0 {
-	//		r.Builder.columns
+	//		r.builder.columns
 	//	}
 	//
-	//	r.Builder.columns = append(r.Builder.columns, arg)
+	//	r.builder.columns = append(r.builder.columns, arg)
 	//}
 
 	return r
