@@ -216,6 +216,6 @@ func (r *DB) DropIfExists(tables string) (sql.Result, error) {
 	return r.Sql().Exec("DROP TABLE IF EXISTS " + tables)
 }
 
-func Rename(from, to string) {
-
+func (r *DB) Rename(from, to string) (sql.Result, error) {
+	return r.Sql().Exec("ALTER TABLE " + from + " RENAME TO " + to)
 }
