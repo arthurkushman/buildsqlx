@@ -14,9 +14,12 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
+	"arsqlx"
 ) 
 
-qDb := db.Table(TestTable).Select("foo", "bar")
+var db = arsqlx.NewDb(arsqlx.NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
+
+qDb := db.Table("table1").Select("foo", "bar")
 
 // If you already have a query builder instance and you wish to add a column to its existing select clause, you may use the addSelect method:
 res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar", "DESC").Limit(15).Offset(5).Get()
@@ -34,9 +37,10 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
+	"arsqlx"
 )
 
-res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
+res, err := db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
 ```
 
 You may chain where constraints together as well as add or clauses to the query. 
@@ -52,16 +56,17 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
+	"arsqlx"
 )
 
 // insert without getting id
-err := db.Table("test").Insert(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
+err := db.Table("table1").Insert(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
 
 // insert returning id
-id, err := db.Table("test").InsertGetId(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
+id, err := db.Table("table1").InsertGetId(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
 
 // batch insert 
-err := db.Table("test").InsertBatch([]map[string]interface{}{
+err := db.Table("table1").InsertBatch([]map[string]interface{}{
                                     	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123},
                                     	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": 1234},
                                     	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
@@ -74,6 +79,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
+	"arsqlx"
 )
 
 db.Drop("table_name")
