@@ -125,6 +125,12 @@ func (r *DB) RightJoin(table string, left string, operator string, right string)
 	return r
 }
 
+func (r *DB) CrossJoin(table string, left string, operator string, right string) *DB {
+	r.Builder.join = append(r.Builder.join, " CROSS JOIN "+table+" ON "+left+operator+right+" ")
+
+	return r
+}
+
 // Where accepts left operand-operator-right operand to apply them to where clause
 func (r *DB) Where(operand string, operator string, val interface{}) *DB {
 	r.Builder.where = operand + " " + operator + " " + convertToStr(val)

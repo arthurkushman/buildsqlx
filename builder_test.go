@@ -1,6 +1,7 @@
 package arsqlx
 
 import (
+	"fmt"
 	_ "github.com/lib/pq"
 	"testing"
 )
@@ -109,6 +110,51 @@ func TestWhereAndOr(t *testing.T) {
 	if res[0]["foo"] != cmp {
 		t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
 	}
+
+	db.Truncate(TestTable)
+}
+
+//var users = `create table users (id serial primary key, name varchar(128) not null, points integer)`
+//
+//var posts = `create table posts (id serial primary key, title varchar(128) not null, post text, user_id integer)`
+
+var batchUsers = []map[string]interface{}{
+	0: {"name": "Alex Shmidt", "points": int64(123)},
+	1: {"name": "Darth Vader", "points": int64(1234)},
+	2: {"name": "Dead Beaf", "points": int64(12345)},
+}
+
+var batchPosts = []map[string]interface{}{
+	0: {"title": "ttl1", "post": "foo bar baz", "user_id": 1},
+	1: {"title": "ttl2", "post": "foo bar baz", "user_id": 2},
+	2: {"title": "ttl3", "post": "foo bar baz", "user_id": 2},
+}
+
+func TestJoins(t *testing.T) {
+	db.Truncate(TestTable)
+
+	err := db.Table("users").InsertBatch(batchUsers)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.Table("posts").InsertBatch(batchPosts)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := db.Table("users").Select("name", "post").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(res)
+	//if res[0]["foo"] != cmp {
+	//	t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
+	//}
 
 	db.Truncate(TestTable)
 }

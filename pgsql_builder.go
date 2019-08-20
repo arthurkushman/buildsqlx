@@ -61,6 +61,10 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 func (r *Builder) buildSelect() string {
 	query := "SELECT " + strings.Join(r.columns, ", ") + " FROM " + r.table
 
+	for _, j := range r.join {
+		query += j
+	}
+
 	// build where clause
 	if r.where != "" {
 		query += " WHERE " + r.where
