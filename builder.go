@@ -214,24 +214,37 @@ func (r *DB) DropIfExists(tables string) (sql.Result, error) {
 	return r.Sql().Exec("DROP TABLE IF EXISTS " + tables)
 }
 
+// Rename renames from - to new table name
 func (r *DB) Rename(from, to string) (sql.Result, error) {
 	return r.Sql().Exec("ALTER TABLE " + from + " RENAME TO " + to)
 }
 
+// WhereIn appends IN (val1, val2, val3...) stmt to WHERE clause
 func (r *DB) WhereIn(field string, in []interface{}) *DB {
 	r.Builder.where += " " + field + " IN (" + strings.Join(prepareSlice(in), ", ") + ")"
 
 	return r
 }
 
+// WhereNotIn appends NOT IN (val1, val2, val3...) stmt to WHERE clause
 func (r *DB) WhereNotIn(field string, in []interface{}) *DB {
 	r.Builder.where += " " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
 
 	return r
 }
 
-func (r *DB) WhereNotNull(field string) *DB {
+// WhereIsNull appends fieldName IS NULL stmt to WHERE clause
+func (r *DB) WhereNull(field string) *DB {
+	r.Builder.where += " " + field + " IS NULL"
 
+	return r
+}
+
+// WhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
+func (r *DB) WhereNotNull(field string) *DB {
+	r.Builder.where += " " + field + " IS NOT NULL"
+
+	return r
 }
 
 func prepareSlice(in []interface{}) (out []string) {
