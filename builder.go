@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // inner type to build qualified sql
@@ -215,4 +216,42 @@ func (r *DB) DropIfExists(tables string) (sql.Result, error) {
 
 func (r *DB) Rename(from, to string) (sql.Result, error) {
 	return r.Sql().Exec("ALTER TABLE " + from + " RENAME TO " + to)
+}
+
+func (r *DB) WhereIn(field string, in []interface{}) *DB {
+	r.Builder.where += " " + field + " IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+
+	return r
+}
+
+func (r *DB) WhereNotIn(field string, in []interface{}) *DB {
+	r.Builder.where += " " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+
+	return r
+}
+
+func (r *DB) WhereNotNull(field string) *DB {
+
+}
+
+func prepareSlice(in []interface{}) (out []string) {
+	for _, value := range in {
+		switch v := value.(type) {
+		case string:
+			out = append(out, v)
+			break
+		case int:
+			out = append(out, strconv.FormatInt(int64(v), 10))
+			break
+		case float64:
+			out = append(out, fmt.Sprintf("%g", v))
+			break
+		case int64:
+		case uint64:
+			out = append(out, strconv.FormatUint(v, 10))
+			break
+		}
+	}
+
+	return
 }
