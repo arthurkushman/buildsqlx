@@ -19,10 +19,12 @@ import (
 
 var db = arsqlx.NewDb(arsqlx.NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
 
-qDb := db.Table("table1").Select("foo", "bar")
+func main() {
+    qDb := db.Table("table1").Select("foo", "bar")
 
-// If you already have a query builder instance and you wish to add a column to its existing select clause, you may use the addSelect method:
-res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar", "DESC").Limit(15).Offset(5).Get()
+    // If you already have a query builder instance and you wish to add a column to its existing select clause, you may use the addSelect method:
+    res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar", "DESC").Limit(15).Offset(5).Get()
+}
 ```
 
 ## Where, AndWhere, OrWhere clauses
@@ -40,7 +42,9 @@ import (
 	"arsqlx"
 )
 
-res, err := db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
+func main() {
+    res, err := db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
+}
 ```
 
 You may chain where constraints together as well as add or clauses to the query. 
@@ -72,18 +76,20 @@ import (
 	"arsqlx"
 )
 
-// insert without getting id
-err := db.Table("table1").Insert(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
+func main() {
+    // insert without getting id
+    err := db.Table("table1").Insert(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
+    
+    // insert returning id
+    id, err := db.Table("table1").InsertGetId(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
 
-// insert returning id
-id, err := db.Table("table1").InsertGetId(map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)})
-
-// batch insert 
-err := db.Table("table1").InsertBatch([]map[string]interface{}{
+    // batch insert 
+    err := db.Table("table1").InsertBatch([]map[string]interface{}{
                                     	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123},
                                     	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": 1234},
                                     	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
                                     })
+}
 ```
 
 ## Drop, Truncate, Rename
@@ -95,11 +101,31 @@ import (
 	"arsqlx"
 )
 
-db.Drop("table_name")
+func main() {
+    db.Drop("table_name")
 
-db.DropIfExists("table_name")
+    db.DropIfExists("table_name")
 
-db.Truncate("table_name")
+    db.Truncate("table_name")
 
-db.Rename("table_name1", "table_name2")
+    db.Rename("table_name1", "table_name2")
+}
+```
+
+## Dump, Dd
+```go
+package yourpackage
+
+import (
+	_ "github.com/lib/pq"
+	"arsqlx"
+)
+
+func main() {
+	// to print raw sql query to stdout 
+	db.Table("table_name").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").Dump()
+	
+	// or to print to stdout and exit a.k.a dump and die
+	db.Table("table_name").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").Dd() 
+}
 ```

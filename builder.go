@@ -197,9 +197,9 @@ func (r *DB) Limit(lim int64) *DB {
 	return r
 }
 
-func Create(table string, closure func()) {
-
-}
+//func Create(table string, closure func()) {
+//
+//}
 
 // Drop drops >=1 tables
 func (r *DB) Drop(tables string) (sql.Result, error) {
