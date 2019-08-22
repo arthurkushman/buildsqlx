@@ -59,9 +59,24 @@ func NewDb(c *Connection) *DB {
 //
 //}
 
+// Table appends table name to sql query
 func (r *DB) Table(table string) *DB {
+	// reset before constructing again
+	r.reset()
 	r.Builder.table = table
 	return r
+}
+
+// resets all builder elements to prepare them for next round
+func (r *DB) reset() {
+	r.Builder.table = ""
+	r.Builder.columns = []string{"*"}
+	r.Builder.where = ""
+	r.Builder.groupBy = ""
+	r.Builder.having = ""
+	r.Builder.orderBy = map[string]string{}
+	r.Builder.offset = 0
+	r.Builder.limit = 0
 }
 
 // Select accepts columns to select from a table
