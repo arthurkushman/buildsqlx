@@ -3,6 +3,8 @@ package arsqlx
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 )
 
@@ -215,4 +217,17 @@ func (r *DB) DropIfExists(tables string) (sql.Result, error) {
 
 func (r *DB) Rename(from, to string) (sql.Result, error) {
 	return r.Sql().Exec("ALTER TABLE " + from + " RENAME TO " + to)
+}
+
+// Dump prints raw sql to stdout
+func (r *DB) Dump() {
+	log.SetOutput(os.Stdout)
+	log.Println(r.Builder.buildSelect())
+}
+
+// Dd prints raw sql to stdout and exit
+func (r *DB) Dd() {
+	log.SetOutput(os.Stdout)
+	log.Println(r.Builder.buildSelect())
+	os.Exit(0)
 }
