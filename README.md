@@ -46,6 +46,14 @@ res, err := db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp
 You may chain where constraints together as well as add or clauses to the query. 
 The orWhere method accepts the same arguments as the where method.
 
+## WhereIn / WhereNotIn / OrWhereIn / OrWhereNotIn
+
+res, err := db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name", []string{"John", "Paul"}).Get()
+
+## WhereNull / WhereNotNull / WhereNull / WhereNotNull 
+
+res, err := db.Table("table1").WhereNull("name").OrWhereNotNull("title").Get()
+
 ## Joins
 ```go
 res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
