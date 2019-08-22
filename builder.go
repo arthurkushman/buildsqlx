@@ -3,6 +3,8 @@ package arsqlx
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -295,4 +297,17 @@ func prepareSlice(in []interface{}) (out []string) {
 	}
 
 	return
+}
+
+// Dump prints raw sql to stdout
+func (r *DB) Dump() {
+	log.SetOutput(os.Stdout)
+	log.Println(r.Builder.buildSelect())
+}
+
+// Dd prints raw sql to stdout and exit
+func (r *DB) Dd() {
+	log.SetOutput(os.Stdout)
+	log.Println(r.Builder.buildSelect())
+	os.Exit(0)
 }
