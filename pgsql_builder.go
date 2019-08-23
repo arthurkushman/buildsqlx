@@ -267,11 +267,21 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 	columns, values, bindings := prepareBindings(data)
 
 	setVal := ""
+	l := len(columns)
 	for k, col := range columns {
-		setVal += col + " = " + bindings[k] + ", "
+		setVal += col + " = " + bindings[k]
+		if k < l-1 {
+			setVal += ", "
+		}
 	}
 
-	res, err := r.Sql().Exec("UPDATE "+r.Builder.table+" SET "+setVal+r.Builder.where, values...)
+	query := "UPDATE " + r.Builder.table + " SET " + setVal
+
+	if r.Builder.where != "" {
+		query += " WHERE " + r.Builder.where
+	}
+
+	res, err := r.Sql().Exec(query, values...)
 	if err != nil {
 		return 0, err
 	}

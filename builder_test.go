@@ -165,3 +165,34 @@ func TestJoins(t *testing.T) {
 	db.Truncate("users")
 	db.Truncate("posts")
 }
+
+var rowsToUpdate = []struct {
+	insert map[string]interface{}
+	update map[string]interface{}
+}{
+	{map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, map[string]interface{}{"foo": "foo changed"}},
+}
+
+func TestUpdate(t *testing.T) {
+	db.Truncate(TestTable)
+
+	for _, obj := range rowsToUpdate {
+		err := db.Table(TestTable).Insert(obj.insert)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(obj.update)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if rows < 1 {
+			t.Fatalf("Can not update rows: %s", obj.update)
+		}
+	}
+
+	db.Truncate(TestTable)
+}
