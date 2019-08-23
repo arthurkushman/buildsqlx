@@ -8,11 +8,13 @@ import (
 	"strings"
 )
 
+const ErrTableCallBeforeOp = "sql: there was no Table() call with table name set"
+
 // Get builds all sql statements chained before and executes query collecting data to the slice
 func (r *DB) Get() ([]map[string]interface{}, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return nil, fmt.Errorf("sql: there was no Table() call with table name set")
+		return nil, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
 	rows, err := r.Sql().Query(builder.buildSelect())
@@ -107,10 +109,10 @@ func (r *builder) buildSelect() string {
 func (r *DB) Insert(data map[string]interface{}) error {
 	builder := r.Builder
 	if builder.table == "" {
-		return fmt.Errorf("sql: there was no Table() call with table name set")
+		return fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareInsert(data)
+	columns, values, bindings := prepareBindings(data)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ")"
 
@@ -127,10 +129,10 @@ func (r *DB) Insert(data map[string]interface{}) error {
 func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf("sql: there was no Table() call with table name set")
+		return 0, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareInsert(data)
+	columns, values, bindings := prepareBindings(data)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") RETURNING id"
 
@@ -144,8 +146,8 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 	return id, nil
 }
 
-// prepareInsert prepares slices to split in favor of INSERT sql statement
-func prepareInsert(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
+// prepareBindings prepares slices to split in favor of INSERT sql statement
+func prepareBindings(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
 
 	i := 1
 	for column, value := range data {
@@ -177,7 +179,7 @@ func prepareInsert(data map[string]interface{}) (columns []string, values []inte
 func (r *DB) InsertBatch(data []map[string]interface{}) error {
 	builder := r.Builder
 	if builder.table == "" {
-		return fmt.Errorf("sql: there was no Table() call with table name set")
+		return fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
 	txn, err := r.Sql().Begin()
@@ -217,7 +219,7 @@ func (r *DB) InsertBatch(data []map[string]interface{}) error {
 	return nil
 }
 
-// prepareInsert prepares slices to split in favor of INSERT sql statement
+// prepareInsertBatch prepares slices to split in favor of INSERT sql statement
 func prepareInsertBatch(data []map[string]interface{}) (columns []string, values [][]interface{}) {
 	values = make([][]interface{}, len(data))
 	colToIdx := make(map[string]int)
@@ -245,8 +247,6 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 				values[k][colToIdx[column]] = fmt.Sprintf("%g", casted)
 				break
 			case int64:
-				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
-				break
 			case uint64:
 				values[k][colToIdx[column]] = strconv.FormatUint(casted, 10)
 				break
@@ -255,4 +255,26 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 	}
 
 	return
+}
+
+// Update builds an UPDATE sql stmt with corresponding where clause if stated
+func (r *DB) Update(data map[string]interface{}) (int64, error) {
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+	}
+
+	columns, values, bindings := prepareBindings(data)
+
+	setVal := ""
+	for k, col := range columns {
+		setVal += col + " = " + bindings[k] + ", "
+	}
+
+	res, err := r.Sql().Exec("UPDATE "+r.Builder.table+" SET "+setVal+r.Builder.where, values...)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.RowsAffected()
 }
