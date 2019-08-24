@@ -277,6 +277,10 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 
 	query := "UPDATE " + r.Builder.table + " SET " + setVal
 
+	if r.Builder.from != "" {
+		query += " FROM " + r.Builder.from
+	}
+
 	if r.Builder.where != "" {
 		query += " WHERE " + r.Builder.where
 	}

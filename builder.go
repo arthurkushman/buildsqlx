@@ -14,7 +14,7 @@ type builder struct {
 	where      string
 	whereNamed map[string]interface{}
 	table      string
-	from       []string
+	from       string
 	join       []string
 	orderBy    map[string]string
 	groupBy    string
@@ -292,6 +292,7 @@ func (r *DB) OrWhereNotNull(field string) *DB {
 	return r
 }
 
+// prepares slice for IN/NOT IN etc
 func prepareSlice(in []interface{}) (out []string) {
 	for _, value := range in {
 		switch v := value.(type) {
@@ -312,6 +313,14 @@ func prepareSlice(in []interface{}) (out []string) {
 	}
 
 	return
+}
+
+// From prepares sql stmt to set data from another table, ex.:
+// UPDATE employees SET sales_count = sales_count + 1 FROM accounts
+func (r *DB) From(fromTbl string) *DB {
+	r.Builder.from = fromTbl
+
+	return r
 }
 
 // Dump prints raw sql to stdout
