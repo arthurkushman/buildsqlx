@@ -264,6 +264,20 @@ func (r *DB) OrWhereNotIn(field string, in []interface{}) *DB {
 	return r
 }
 
+// AndWhereIn appends OR IN (val1, val2, val3...) stmt to WHERE clause
+func (r *DB) AndWhereIn(field string, in []interface{}) *DB {
+	r.Builder.where += " AND " + field + " IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+
+	return r
+}
+
+// OrWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
+func (r *DB) AndWhereNotIn(field string, in []interface{}) *DB {
+	r.Builder.where += " AND " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+
+	return r
+}
+
 // WhereIsNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) WhereNull(field string) *DB {
 	r.Builder.where += " " + field + " IS NULL"
@@ -288,6 +302,20 @@ func (r *DB) OrWhereNull(field string) *DB {
 // OrWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) OrWhereNotNull(field string) *DB {
 	r.Builder.where += " OR " + field + " IS NOT NULL"
+
+	return r
+}
+
+// AndWhereIsNull appends fieldName IS NULL stmt to WHERE clause
+func (r *DB) AndWhereNull(field string) *DB {
+	r.Builder.where += " AND " + field + " IS NULL"
+
+	return r
+}
+
+// OrWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
+func (r *DB) AndWhereNotNull(field string) *DB {
+	r.Builder.where += " AND " + field + " IS NOT NULL"
 
 	return r
 }
