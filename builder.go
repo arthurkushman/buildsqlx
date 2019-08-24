@@ -83,13 +83,6 @@ func (r *DB) reset() {
 func (r *DB) Select(args ...string) *DB {
 	r.Builder.columns = []string{}
 	r.Builder.columns = append(r.Builder.columns, args...)
-	//for k, arg := range args {
-	//	if k == 0 {
-	//		r.builder.columns
-	//	}
-	//
-	//	r.builder.columns = append(r.builder.columns, arg)
-	//}
 
 	return r
 }
@@ -122,8 +115,8 @@ func (r *DB) AddSelect(args ...string) *DB {
 }
 
 // SelectRow accepts custom string to select from a table
-func (r *DB) SelectRow(row string) *DB {
-	r.Builder.columns = append(r.Builder.columns, row)
+func (r *DB) SelectRaw(raw string) *DB {
+	r.Builder.columns = append(r.Builder.columns, raw)
 
 	return r
 }
@@ -193,7 +186,14 @@ func (r *DB) WhereRaw(raw string) *DB {
 
 // OrWhereRaw accepts custom string to apply it to where clause with logical OR
 func (r *DB) OrWhereRaw(raw string) *DB {
-	r.Builder.where = " OR " + raw
+	r.Builder.where += " OR " + raw
+
+	return r
+}
+
+// AndWhereRaw accepts custom string to apply it to where clause with logical OR
+func (r *DB) AndWhereRaw(raw string) *DB {
+	r.Builder.where += " AND " + raw
 
 	return r
 }
