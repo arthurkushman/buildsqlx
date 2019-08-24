@@ -271,7 +271,7 @@ func (r *DB) AndWhereIn(field string, in []interface{}) *DB {
 	return r
 }
 
-// OrWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
+// AndWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
 func (r *DB) AndWhereNotIn(field string, in []interface{}) *DB {
 	r.Builder.where += " AND " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
 
@@ -313,7 +313,7 @@ func (r *DB) AndWhereNull(field string) *DB {
 	return r
 }
 
-// OrWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
+// AndWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) AndWhereNotNull(field string) *DB {
 	r.Builder.where += " AND " + field + " IS NOT NULL"
 
