@@ -315,3 +315,30 @@ func (r *DB) Delete() (int64, error) {
 
 	return res.RowsAffected()
 }
+
+// Increment
+func (r *DB) Increment(column string, on uint64) (int64, error) {
+	return r.incrDecr(column, "+", on)
+}
+
+// Decrement
+func (r *DB) Decrement(column string, on uint64) (int64, error) {
+	return r.incrDecr(column, "-", on)
+}
+
+// increments or decrements depending on sign
+func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+	}
+
+	query := "UPDATE " + r.Builder.table + " SET " + column + " = " + column + sign + strconv.FormatUint(on, 10)
+
+	res, err := r.Sql().Exec(query)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.RowsAffected()
+}

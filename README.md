@@ -50,23 +50,25 @@ func main() {
 You may chain where constraints together as well as add or clauses to the query. 
 The orWhere method accepts the same arguments as the where method.
 
-## WhereIn / WhereNotIn / OrWhereIn / OrWhereNotIn
+## WhereIn / WhereNotIn 
+The whereIn method verifies that a given column's value is contained within the given slice:
 ```go
 res, err := db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name", []string{"John", "Paul"}).Get()
 ```
 
-## WhereNull / WhereNotNull / WhereNull / WhereNotNull 
+## WhereNull / WhereNotNull  
+The whereNull method verifies that the value of the given column is NULL:
 ```go
 res, err := db.Table("table1").WhereNull("name").OrWhereNotNull("title").Get()
 ```
 
 ## Left / Right / Cross Joins
+
 ```go
 res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
 ```
 
 ## Inserts
-
 The query builder also provides an insert method for inserting records into the database table. 
 The insert method accepts a map of column names and values:
 
@@ -95,11 +97,17 @@ func main() {
 ```
 
 ## Updates
+In addition to inserting records into the database, 
+the query builder can also update existing records using the update method. 
+The update method, like the insert method, accepts a slice of column and value pairs containing the columns to be updated. 
+You may constrain the update query using where clauses:
 ```go
 rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(map[string]interface{}{"foo": "foo changed"})
 ```
 
 ## Delete
+The query builder may also be used to delete records from the table via the delete method. 
+You may constrain delete statements by adding where clauses before calling the delete method:
 ```go
 rows, err := db.Table(TestTable).Where("baz", "=", 123).Delete()
 ```
@@ -124,7 +132,23 @@ func main() {
 }
 ```
 
+## Increment & Decrement
+
+The query builder also provides convenient methods for incrementing or decrementing the value of a given column. 
+This is a shortcut, providing a more expressive and terse interface compared to manually writing the update statement.
+
+Both of these methods accept 2 arguments: the column to modify, a second argument to control the amount by which the column should be incremented or decremented:
+
+```go
+    db.Table("users").Increment("votes", 3)
+
+    db.Table("users").Decrement("votes", 1)
+```
+
 ## Dump, Dd
+You may use the Dd or Dump methods while building a query to dump the query bindings and SQL. 
+The dd method will display the debug information and then stop executing the request. 
+The dump method will display the debug information but allow the request to keep executing:
 ```go
 package yourpackage
 

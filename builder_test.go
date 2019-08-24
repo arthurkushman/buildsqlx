@@ -225,3 +225,51 @@ func TestDelete(t *testing.T) {
 		}
 	}
 }
+
+var incrDecr = []struct {
+	insert  map[string]interface{}
+	incr    uint64
+	incrRes uint64
+	decr    uint64
+	decrRes uint64
+}{
+	{map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": 1}, 3, 4, 1, 3},
+}
+
+func TestDB_Increment_Decrement(t *testing.T) {
+	db.Truncate(TestTable)
+
+	for _, obj := range incrDecr {
+		err := db.Table(TestTable).Insert(obj.insert)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		db.Table(TestTable).Increment("baz", obj.incr)
+
+		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.incrRes).Get()
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(res) < 1 && res[0]["baz"] != obj.incrRes {
+			t.Fatalf("want %d, got %d", res[0]["baz"], obj.incrRes)
+		}
+
+		db.Table(TestTable).Decrement("baz", obj.decr)
+
+		res, err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.decrRes).Get()
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(res) < 1 && res[0]["baz"] != obj.decrRes {
+			t.Fatalf("want %d, got %d", res[0]["baz"], obj.decrRes)
+		}
+	}
+
+	db.Truncate(TestTable)
+}
