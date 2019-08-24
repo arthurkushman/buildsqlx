@@ -257,7 +257,8 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 	return
 }
 
-// Update builds an UPDATE sql stmt with corresponding where clause if stated
+// Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
+// returning affected rows
 func (r *DB) Update(data map[string]interface{}) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
@@ -286,6 +287,28 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 	}
 
 	res, err := r.Sql().Exec(query, values...)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.RowsAffected()
+}
+
+// Delete builds a DELETE stmt with corresponding where clause if stated
+// returning affected rows
+func (r *DB) Delete() (int64, error) {
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+	}
+
+	query := "DELETE FROM " + r.Builder.table
+
+	if r.Builder.where != "" {
+		query += " WHERE " + r.Builder.where
+	}
+
+	res, err := r.Sql().Exec(query)
 	if err != nil {
 		return 0, err
 	}

@@ -99,6 +99,11 @@ func main() {
 rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(map[string]interface{}{"foo": "foo changed"})
 ```
 
+## Delete
+```go
+rows, err := db.Table(TestTable).Where("baz", "=", 123).Delete()
+```
+
 ## Drop, Truncate, Rename
 ```go
 package yourpackage

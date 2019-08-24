@@ -196,3 +196,32 @@ func TestUpdate(t *testing.T) {
 
 	db.Truncate(TestTable)
 }
+
+var rowsToDelete = []struct {
+	insert map[string]interface{}
+	where  map[string]interface{}
+}{
+	{map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, map[string]interface{}{"bar": 123}},
+}
+
+func TestDelete(t *testing.T) {
+	db.Truncate(TestTable)
+
+	for _, obj := range rowsToDelete {
+		err := db.Table(TestTable).Insert(obj.insert)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rows, err := db.Table(TestTable).Where("baz", "=", obj.where["bar"]).Delete()
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if rows < 1 {
+			t.Fatalf("Can not delete rows: %s", obj.where)
+		}
+	}
+}
