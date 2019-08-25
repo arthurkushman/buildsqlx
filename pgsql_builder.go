@@ -8,7 +8,11 @@ import (
 	"strings"
 )
 
-const ErrTableCallBeforeOp = "sql: there was no Table() call with table name set"
+const (
+	PlusSign             = "+"
+	MinusSign            = "-"
+	ErrTableCallBeforeOp = "sql: there was no Table() call with table name set"
+)
 
 // Get builds all sql statements chained before and executes query collecting data to the slice
 func (r *DB) Get() ([]map[string]interface{}, error) {
@@ -316,14 +320,14 @@ func (r *DB) Delete() (int64, error) {
 	return res.RowsAffected()
 }
 
-// Increment
+// Increment column on passed value
 func (r *DB) Increment(column string, on uint64) (int64, error) {
-	return r.incrDecr(column, "+", on)
+	return r.incrDecr(column, PlusSign, on)
 }
 
-// Decrement
+// Decrement column on passed value
 func (r *DB) Decrement(column string, on uint64) (int64, error) {
-	return r.incrDecr(column, "-", on)
+	return r.incrDecr(column, MinusSign, on)
 }
 
 // increments or decrements depending on sign
