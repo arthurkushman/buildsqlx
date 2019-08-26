@@ -254,6 +254,8 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 				values[k][colToIdx[column]] = fmt.Sprintf("%g", casted)
 				break
 			case int64:
+				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
+				break
 			case uint64:
 				values[k][colToIdx[column]] = strconv.FormatUint(casted, 10)
 				break

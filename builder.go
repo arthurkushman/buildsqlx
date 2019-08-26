@@ -363,6 +363,7 @@ func prepareSlice(in []interface{}) (out []string) {
 			out = append(out, fmt.Sprintf("%g", v))
 			break
 		case int64:
+			out = append(out, strconv.FormatInt(v, 10))
 		case uint64:
 			out = append(out, strconv.FormatUint(v, 10))
 			break
