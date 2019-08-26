@@ -9,6 +9,15 @@ import (
 	"strings"
 )
 
+const (
+	JoinInner     = "INNER"
+	JoinCross     = "CROSS"
+	JoinLeft      = "LEFT"
+	JoinRight     = "RIGHT"
+	JoinFull      = "FULL"
+	JoinFullOuter = "FULL OUTER"
+)
+
 // inner type to build qualified sql
 type builder struct {
 	where      string
@@ -121,37 +130,38 @@ func (r *DB) SelectRaw(raw string) *DB {
 	return r
 }
 
+// InnerJoin joins tables by getting elements if found in both
+func (r *DB) InnerJoin(table string, left string, operator string, right string) *DB {
+	return r.buildJoin(JoinInner, table, left+operator+right)
+}
+
 // LeftJoin joins tables by getting elements from left without those that null on the right
 func (r *DB) LeftJoin(table string, left string, operator string, right string) *DB {
-	r.Builder.join = append(r.Builder.join, " LEFT JOIN "+table+" ON "+left+operator+right+" ")
-
-	return r
+	return r.buildJoin(JoinLeft, table, left+operator+right)
 }
 
 // RightJoin joins tables by getting elements from right without those that null on the left
 func (r *DB) RightJoin(table string, left string, operator string, right string) *DB {
-	r.Builder.join = append(r.Builder.join, " RIGHT JOIN "+table+" ON "+left+operator+right+" ")
-
-	return r
+	return r.buildJoin(JoinRight, table, left+operator+right)
 }
 
 // CrossJoin joins tables by getting intersection of sets
 func (r *DB) CrossJoin(table string, left string, operator string, right string) *DB {
-	r.Builder.join = append(r.Builder.join, " CROSS JOIN "+table+" ON "+left+operator+right+" ")
-
-	return r
+	return r.buildJoin(JoinCross, table, left+operator+right)
 }
 
 // FullJoin joins tables by getting all elements of both sets
 func (r *DB) FullJoin(table string, left string, operator string, right string) *DB {
-	r.Builder.join = append(r.Builder.join, " FULL JOIN "+table+" ON "+left+operator+right+" ")
-
-	return r
+	return r.buildJoin(JoinFull, table, left+operator+right)
 }
 
 // FullOuterJoin joins tables by getting an outer sets
 func (r *DB) FullOuterJoin(table string, left string, operator string, right string) *DB {
-	r.Builder.join = append(r.Builder.join, " FULL OUTER JOIN "+table+" ON "+left+operator+right+" ")
+	return r.buildJoin(JoinFullOuter, table, left+operator+right)
+}
+
+func (r *DB) buildJoin(joinType string, table string, on string) *DB {
+	r.Builder.join = append(r.Builder.join, " "+joinType+" JOIN "+table+" ON "+on+" ")
 
 	return r
 }

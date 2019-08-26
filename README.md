@@ -62,8 +62,12 @@ The whereNull method verifies that the value of the given column is NULL:
 res, err := db.Table("table1").WhereNull("name").OrWhereNotNull("title").Get()
 ```
 
-## Left / Right / Cross Joins
-
+## Left / Right / Cross / Inner / Left Outer Joins
+The query builder may also be used to write join statements. 
+To perform a basic "inner join", you may use the InnerJoin method on a query builder instance. 
+The first argument passed to the join method is the name of the table you need to join to, 
+while the remaining arguments specify the column constraints for the join. 
+You can even join to multiple tables in a single query:
 ```go
 res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
 ```
