@@ -357,17 +357,12 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 		return 0, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	txn, err := r.Sql().Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	columns, values, bindings := prepareBindings(data)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") ON CONFLICT(" + conflict + ") DO UPDATE SET "
 
 	for i, v := range columns {
-		columns[i] = "excluded." + v
+		columns[i] = v + " = excluded." + v
 	}
 
 	query += strings.Join(columns, ", ")
