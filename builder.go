@@ -121,20 +121,37 @@ func (r *DB) SelectRaw(raw string) *DB {
 	return r
 }
 
+// LeftJoin joins tables by getting elements from left without those that null on the right
 func (r *DB) LeftJoin(table string, left string, operator string, right string) *DB {
 	r.Builder.join = append(r.Builder.join, " LEFT JOIN "+table+" ON "+left+operator+right+" ")
 
 	return r
 }
 
+// RightJoin joins tables by getting elements from right without those that null on the left
 func (r *DB) RightJoin(table string, left string, operator string, right string) *DB {
 	r.Builder.join = append(r.Builder.join, " RIGHT JOIN "+table+" ON "+left+operator+right+" ")
 
 	return r
 }
 
+// CrossJoin joins tables by getting intersection of sets
 func (r *DB) CrossJoin(table string, left string, operator string, right string) *DB {
 	r.Builder.join = append(r.Builder.join, " CROSS JOIN "+table+" ON "+left+operator+right+" ")
+
+	return r
+}
+
+// FullJoin joins tables by getting all elements of both sets
+func (r *DB) FullJoin(table string, left string, operator string, right string) *DB {
+	r.Builder.join = append(r.Builder.join, " FULL JOIN "+table+" ON "+left+operator+right+" ")
+
+	return r
+}
+
+// FullOuterJoin joins tables by getting an outer sets
+func (r *DB) FullOuterJoin(table string, left string, operator string, right string) *DB {
+	r.Builder.join = append(r.Builder.join, " FULL OUTER JOIN "+table+" ON "+left+operator+right+" ")
 
 	return r
 }
