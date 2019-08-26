@@ -170,6 +170,9 @@ func prepareBindings(data map[string]interface{}) (columns []string, values []in
 		case int64:
 			values = append(values, strconv.FormatInt(v, 10))
 			break
+		case uint64:
+			values = append(values, strconv.FormatUint(v, 10))
+			break
 		}
 
 		bindings = append(bindings, "$"+strconv.FormatInt(int64(i), 10))
@@ -340,6 +343,37 @@ func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 	query := "UPDATE " + r.Builder.table + " SET " + column + " = " + column + sign + strconv.FormatUint(on, 10)
 
 	res, err := r.Sql().Exec(query)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.RowsAffected()
+}
+
+// Replace inserts data if conflicting row hasn't been found, else it will update an existing one
+func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error) {
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+	}
+
+	txn, err := r.Sql().Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	columns, values, bindings := prepareBindings(data)
+
+	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") ON CONFLICT(" + conflict + ") DO UPDATE SET "
+
+	for i, v := range columns {
+		columns[i] = "excluded." + v
+	}
+
+	query += strings.Join(columns, ", ")
+
+	res, err := r.Sql().Exec(query, values...)
+
 	if err != nil {
 		return 0, err
 	}
