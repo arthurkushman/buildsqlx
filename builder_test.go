@@ -273,3 +273,41 @@ func TestDB_Increment_Decrement(t *testing.T) {
 
 	db.Truncate(TestTable)
 }
+
+var rowsToReplace = []struct {
+	insert   map[string]interface{}
+	conflict string
+	replace  map[string]interface{}
+}{
+	{map[string]interface{}{"id": 1, "foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, "id", map[string]interface{}{"id": 1, "foo": "baz baz baz", "baz": 123}},
+}
+
+func TestDB_Replace(t *testing.T) {
+	db.Truncate(TestTable)
+
+	for _, obj := range rowsToReplace {
+		rows, err := db.Table(TestTable).Replace(obj.insert, obj.conflict)
+
+		if rows < 1 {
+			t.Fatal(err)
+		}
+
+		rows, err = db.Table(TestTable).Replace(obj.replace, obj.conflict)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if rows < 1 {
+			t.Fatal(err)
+		}
+
+		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.replace["baz"]).Get()
+
+		if len(res) < 1 && res[0]["foo"] != obj.replace["foo"] {
+			t.Fatalf("want %d, got %d", obj.replace["foo"], res[0]["foo"])
+		}
+	}
+
+	db.Truncate(TestTable)
+}
