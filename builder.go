@@ -20,18 +20,19 @@ const (
 
 // inner type to build qualified sql
 type builder struct {
-	where      string
-	whereNamed map[string]interface{}
-	table      string
-	from       string
-	join       []string
-	orderBy    map[string]string
-	groupBy    string
-	having     string
-	columns    []string
-	union      []string
-	offset     int64
-	limit      int64
+	where         string
+	whereNamed    map[string]interface{}
+	table         string
+	from          string
+	join          []string
+	orderBy       map[string]string
+	groupBy       string
+	having        string
+	columns       []string
+	union         []string
+	offset        int64
+	limit         int64
+	lockForUpdate *string
 }
 
 // DB is an entity that composite builder and Conn types
@@ -110,6 +111,13 @@ func (r *DB) OrderBy(column string, direction string) *DB {
 // GroupBy adds GROUP BY expression to SQL stmt
 func (r *DB) GroupBy(expr string) *DB {
 	r.Builder.groupBy = expr
+
+	return r
+}
+
+// Having similar to Where but used with GroupBy to apply over the grouped results
+func (r *DB) Having(operand string, operator string, val interface{}) *DB {
+	r.Builder.having = operand + " " + operator + " " + convertToStr(val)
 
 	return r
 }
@@ -384,6 +392,13 @@ func prepareSlice(in []interface{}) (out []string) {
 // UPDATE employees SET sales_count = sales_count + 1 FROM accounts
 func (r *DB) From(fromTbl string) *DB {
 	r.Builder.from = fromTbl
+
+	return r
+}
+
+func (r *DB) LockForUpdate() *DB {
+	str := " FOR UPDATE"
+	r.Builder.lockForUpdate = &str
 
 	return r
 }
