@@ -14,7 +14,7 @@ var dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar",
 func TestSelectAndLimit(t *testing.T) {
 	db.Truncate(TestTable)
 
-	db.Table("test").Insert(dataMap)
+	db.Table(TestTable).Insert(dataMap)
 
 	qDb := db.Table(TestTable).Select("foo", "bar")
 
@@ -38,7 +38,7 @@ func TestSelectAndLimit(t *testing.T) {
 func TestInsert(t *testing.T) {
 	db.Truncate(TestTable)
 
-	err := db.Table("test").Insert(dataMap)
+	err := db.Table(TestTable).Insert(dataMap)
 
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +70,7 @@ var batchData = []map[string]interface{}{
 func TestInsertBatchSelectMultiple(t *testing.T) {
 	db.Truncate(TestTable)
 
-	err := db.Table("test").InsertBatch(batchData)
+	err := db.Table(TestTable).InsertBatch(batchData)
 
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +98,7 @@ func TestWhereAndOr(t *testing.T) {
 
 	db.Truncate(TestTable)
 
-	err := db.Table("test").InsertBatch(batchData)
+	err := db.Table(TestTable).InsertBatch(batchData)
 
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
 
@@ -306,6 +306,32 @@ func TestDB_Replace(t *testing.T) {
 
 		if len(res) < 1 && res[0]["foo"] != obj.replace["foo"] {
 			t.Fatalf("want %d, got %d", obj.replace["foo"], res[0]["foo"])
+		}
+	}
+
+	db.Truncate(TestTable)
+}
+
+var userForUnion = map[string]interface{}{"id": int64(1), "name": "Alex Shmidt", "points": int64(123)}
+
+func TestDB_Union(t *testing.T) {
+	db.Truncate(TestTable)
+
+	err := db.Table(TestTable).Insert(dataMap)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db.Table("users").Insert(userForUnion)
+
+	union := db.Table(TestTable).Select("bar", "baz").Union()
+
+	res, _ := union.Table("users").Select("name", "points").Get()
+
+	for _, v := range res {
+		if v["baz"] != userForUnion["points"] {
+			t.Fatalf("want %d, got %d", userForUnion["points"], v["baz"])
 		}
 	}
 

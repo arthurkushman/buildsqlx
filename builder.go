@@ -160,6 +160,13 @@ func (r *DB) FullOuterJoin(table string, left string, operator string, right str
 	return r.buildJoin(JoinFullOuter, table, left+operator+right)
 }
 
+// Union joins multiple queries
+func (r *DB) Union() *DB {
+	r.Builder.union = append(r.Builder.union, r.Builder.buildSelect())
+
+	return r
+}
+
 func (r *DB) buildJoin(joinType string, table string, on string) *DB {
 	r.Builder.join = append(r.Builder.join, " "+joinType+" JOIN "+table+" ON "+on+" ")
 

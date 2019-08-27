@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	PlusSign             = "+"
-	MinusSign            = "-"
+	PlusSign  = "+"
+	MinusSign = "-"
+	// Errors
 	ErrTableCallBeforeOp = "sql: there was no Table() call with table name set"
 )
 
@@ -21,7 +22,18 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 		return nil, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	rows, err := r.Sql().Query(builder.buildSelect())
+	query := ""
+	if len(builder.union) > 0 { // got union - need different logic to glue
+		for _, uBuilder := range builder.union {
+			query += uBuilder + " UNION "
+		}
+
+		query += builder.buildSelect()
+	} else { // std builder
+		query = builder.buildSelect()
+	}
+
+	rows, err := r.Sql().Query(query)
 	if err != nil {
 		return nil, err
 	}
