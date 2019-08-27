@@ -106,6 +106,10 @@ func (r *builder) buildSelect() string {
 		query += " OFFSET " + strconv.FormatInt(r.offset, 10)
 	}
 
+	if r.lockForUpdate != nil {
+		query += *r.lockForUpdate
+	}
+
 	return query
 }
 
