@@ -5,7 +5,7 @@ Go Active Record library for postgresql
 [![GoDoc](https://github.com/golang/gddo/blob/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/arthurkushman/arsqlx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-## Selects, Ordering, Grouping, Limit & Offset
+## Selects, Ordering, Limit & Offset
 
 You may not always want to select all columns from a database table. Using the select method, you can specify a custom select clause for the query:
 
@@ -25,6 +25,13 @@ func main() {
     // If you already have a query builder instance and you wish to add a column to its existing select clause, you may use the addSelect method:
     res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar", "DESC").Limit(15).Offset(5).Get()
 }
+```
+
+## GroupBy / Having
+The GroupBy and Having methods may be used to group the query results. 
+The having method's signature is similar to that of the where method:
+```go
+res, err := db.table("users").GroupBy("account_id").Having("account_id", ">", 100).Get()
 ```
 
 ## Where, AndWhere, OrWhere clauses

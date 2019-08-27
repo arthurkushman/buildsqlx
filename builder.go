@@ -115,6 +115,13 @@ func (r *DB) GroupBy(expr string) *DB {
 	return r
 }
 
+// Having similar to Where but used with GroupBy to apply over the grouped results
+func (r *DB) Having(operand string, operator string, val interface{}) *DB {
+	r.Builder.having = operand + " " + operator + " " + convertToStr(val)
+
+	return r
+}
+
 // AddSelect accepts additional columns to select from a table
 func (r *DB) AddSelect(args ...string) *DB {
 	for _, arg := range args {
