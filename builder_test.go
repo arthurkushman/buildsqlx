@@ -85,7 +85,7 @@ func TestInsertBatchSelectMultiple(t *testing.T) {
 	for mapKey, mapVal := range batchData {
 		for k, mV := range mapVal {
 			if res[mapKey][k] != mV {
-				t.Fatalf("want: %T, got: %T", mV, res[mapKey][k])
+				t.Fatalf("want: %v, got: %v", mV, res[mapKey][k])
 			}
 		}
 	}

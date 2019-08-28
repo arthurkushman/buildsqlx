@@ -47,7 +47,7 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	var res []map[string]interface{}
 
 	for rows.Next() {
-		collect := make(map[string]interface{})
+		collect := make(map[string]interface{}, count)
 
 		for i := range columns {
 			valuePtrs[i] = &values[i]
