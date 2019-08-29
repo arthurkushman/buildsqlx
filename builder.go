@@ -30,6 +30,7 @@ type builder struct {
 	having        string
 	columns       []string
 	union         []string
+	isUnionAll    bool
 	offset        int64
 	limit         int64
 	lockForUpdate *string
@@ -168,9 +169,17 @@ func (r *DB) FullOuterJoin(table string, left string, operator string, right str
 	return r.buildJoin(JoinFullOuter, table, left+operator+right)
 }
 
-// Union joins multiple queries
+// Union joins multiple queries omitting duplicate records
 func (r *DB) Union() *DB {
 	r.Builder.union = append(r.Builder.union, r.Builder.buildSelect())
+
+	return r
+}
+
+// UnionAll joins multiple queries to select all rows from both tables with duplicate
+func (r *DB) UnionAll() *DB {
+	r.Union()
+	r.Builder.isUnionAll = true
 
 	return r
 }

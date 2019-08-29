@@ -26,6 +26,10 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	if len(builder.union) > 0 { // got union - need different logic to glue
 		for _, uBuilder := range builder.union {
 			query += uBuilder + " UNION "
+
+			if builder.isUnionAll == true {
+				query += "ALL "
+			}
 		}
 
 		query += builder.buildSelect()
