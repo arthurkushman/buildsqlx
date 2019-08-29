@@ -424,3 +424,11 @@ func (r *DB) Dd() {
 	log.Println(r.Builder.buildSelect())
 	os.Exit(0)
 }
+
+// HasTable determines whether table exists in particular schema
+func (r *DB) HasTable(schema, tbl string) (tblExists bool, err error) {
+	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE  schemaname = '%s' AND tablename = '%s')", schema, tbl)
+	err = r.Sql().QueryRow(query).Scan(&tblExists)
+
+	return
+}

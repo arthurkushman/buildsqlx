@@ -196,3 +196,8 @@ func main() {
 	db.Table("table_name").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").Dd() 
 }
 ```
+
+## Check if table exists
+```go
+tblExists, err := db.HasTable("public", "posts")
+```

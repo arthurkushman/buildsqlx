@@ -353,3 +353,15 @@ func TestDB_InTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDB_HasTable(t *testing.T) {
+	tblExists, err := db.HasTable("public", "posts")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !tblExists {
+		t.Fatalf("expected: true, got: false")
+	}
+}
