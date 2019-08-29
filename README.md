@@ -156,6 +156,17 @@ Both of these methods accept 2 arguments: the column to modify, a second argumen
     db.Table("users").Decrement("votes", 1)
 ```
 
+## Union / Union All
+The query builder also provides a quick way to "union" two queries together. 
+For example, you may create an initial query and use the union method to union it with a second query:
+```go
+union := db.Table("posts").Select("title", "likes").Union()
+res, err := union.Table("users").Select("name", "points").Get()
+
+// or if UNION ALL is of need
+// union := db.Table("posts").Select("title", "likes").UnionAll()
+```
+
 ## Dump, Dd
 You may use the Dd or Dump methods while building a query to dump the query bindings and SQL. 
 The dd method will display the debug information and then stop executing the request. 
