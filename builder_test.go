@@ -337,3 +337,19 @@ func TestDB_Union(t *testing.T) {
 
 	db.Truncate(TestTable)
 }
+
+func TestDB_InTransaction(t *testing.T) {
+	err := db.InTransaction(func() (interface{}, error) {
+		db.Truncate(TestTable)
+
+		err := db.Table(TestTable).Insert(dataMap)
+
+		db.Truncate(TestTable)
+
+		return 1, err
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}

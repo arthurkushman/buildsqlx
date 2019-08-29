@@ -397,3 +397,49 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 
 	return res.RowsAffected()
 }
+
+// InTransaction executes fn passed as an argument in transaction mode
+// if there are no results returned - txn will be rolled back, otherwise committed and returned
+func (r *DB) InTransaction(fn func() (interface{}, error)) error {
+	txn, err := r.Sql().Begin()
+
+	res, err := fn()
+	if err != nil {
+		return err
+	}
+
+	isOk := false
+	switch v := res.(type) {
+	case int64:
+		if v > 0 {
+			isOk = true
+		}
+		break
+	case uint64:
+		if v > 0 {
+			isOk = true
+		}
+		break
+	case []map[string]interface{}:
+		if len(v) > 0 {
+			isOk = true
+		}
+		break
+	case map[string]interface{}:
+		if len(v) > 0 {
+			isOk = true
+		}
+		break
+	}
+
+	if !isOk {
+		return txn.Rollback()
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

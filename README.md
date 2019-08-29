@@ -167,6 +167,15 @@ res, err := union.Table("users").Select("name", "points").Get()
 // union := db.Table("posts").Select("title", "likes").UnionAll()
 ```
 
+## Transaction mode
+You can run arbitrary queries mixed with any code in transaction mode getting an error and as a result rollback if something went wrong
+or committed if everything is ok:  
+```go
+	err := db.InTransaction(func() (interface{}, error) {
+		return db.Table("users").Select("name", "post", "user_id").Get()
+	})
+```
+
 ## Dump, Dd
 You may use the Dd or Dump methods while building a query to dump the query bindings and SQL. 
 The dd method will display the debug information and then stop executing the request. 
