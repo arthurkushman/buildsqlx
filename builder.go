@@ -434,14 +434,14 @@ func (r *DB) HasTable(schema, tbl string) (tblExists bool, err error) {
 }
 
 // HasColumns checks whether those cols exists in a particular schema/table
-func (r *DB) HasColumns(schema, tbl string, cols ...string) (tblExists bool, err error) {
+func (r *DB) HasColumns(schema, tbl string, cols ...string) (colsExists bool, err error) {
 	andColumns := ""
 	for _, v := range cols {
 		andColumns += " AND column_name = '" + v + "'"
 	}
 
 	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='%s' AND table_name='%s'"+andColumns+")", schema, tbl)
-	err = r.Sql().QueryRow(query).Scan(&tblExists)
+	err = r.Sql().QueryRow(query).Scan(&colsExists)
 
 	return
 }
