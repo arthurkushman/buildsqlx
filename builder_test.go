@@ -365,3 +365,15 @@ func TestDB_HasTable(t *testing.T) {
 		t.Fatalf("expected: true, got: false")
 	}
 }
+
+func TestDB_HasColumns(t *testing.T) {
+	colsExists, err := db.HasColumns("public", "posts", "title", "user_id")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !colsExists {
+		t.Fatalf("expected: true, got: false")
+	}
+}

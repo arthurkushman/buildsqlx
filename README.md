@@ -201,3 +201,8 @@ func main() {
 ```go
 tblExists, err := db.HasTable("public", "posts")
 ```
+
+## Check if columns exist in a table within schema
+```go
+colsExists, err := db.HasColumns("public", "posts", "title", "user_id")
+```
