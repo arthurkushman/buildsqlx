@@ -377,3 +377,24 @@ func TestDB_HasColumns(t *testing.T) {
 		t.Fatalf("expected: true, got: false")
 	}
 }
+
+func TestDB_First(t *testing.T) {
+	db.Truncate(TestTable)
+
+	err := db.Table(TestTable).Insert(dataMap)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// write concurrent row ot order and get the only 1st
+	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
+
+	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").First()
+
+	if res["baz"] != int64(1234) {
+		t.Fatalf("want: %d, got: %d", int64(1234), res["baz"])
+	}
+
+	db.Truncate(TestTable)
+}

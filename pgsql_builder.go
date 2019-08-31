@@ -443,3 +443,13 @@ func (r *DB) InTransaction(fn func() (interface{}, error)) error {
 
 	return nil
 }
+
+// First getting the 1st row of query
+func (r *DB) First() (map[string]interface{}, error) {
+	res, err := r.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	return res[0], nil
+}

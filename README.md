@@ -206,3 +206,8 @@ tblExists, err := db.HasTable("public", "posts")
 ```go
 colsExists, err := db.HasColumns("public", "posts", "title", "user_id")
 ```
+
+## First 
+```go
+res, err := db.Table("posts").Select("title").OrderBy("created_at", "desc").First()
+```
