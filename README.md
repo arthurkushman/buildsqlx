@@ -151,9 +151,9 @@ This is a shortcut, providing a more expressive and terse interface compared to 
 Both of these methods accept 2 arguments: the column to modify, a second argument to control the amount by which the column should be incremented or decremented:
 
 ```go
-    db.Table("users").Increment("votes", 3)
+db.Table("users").Increment("votes", 3)
 
-    db.Table("users").Decrement("votes", 1)
+db.Table("users").Decrement("votes", 1)
 ```
 
 ## Union / Union All
@@ -171,9 +171,9 @@ res, err := union.Table("users").Select("name", "points").Get()
 You can run arbitrary queries mixed with any code in transaction mode getting an error and as a result rollback if something went wrong
 or committed if everything is ok:  
 ```go
-	err := db.InTransaction(func() (interface{}, error) {
-		return db.Table("users").Select("name", "post", "user_id").Get()
-	})
+err := db.InTransaction(func() (interface{}, error) {
+    return db.Table("users").Select("name", "post", "user_id").Get()
+})
 ```
 
 ## Dump, Dd
@@ -221,8 +221,8 @@ The whereExists method allows you to write where exists SQL clauses.
 The whereExists method accepts a *DB argument, 
 which will receive a query builder instance allowing you to define the query that should be placed inside of the "exists" clause:
 ```go
-	res, er := db.Table("users").Select("name").WhereExists(
-		db.Table("users").Select("name").Where("points", ">=", int64(12345)),
-	).First()
+res, er := db.Table("users").Select("name").WhereExists(
+    db.Table("users").Select("name").Where("points", ">=", int64(12345)),
+).First()
 ```
 Any query that is of need to build one can place inside `WhereExists` clause/func.
