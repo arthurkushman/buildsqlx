@@ -34,6 +34,7 @@ type builder struct {
 	offset        int64
 	limit         int64
 	lockForUpdate *string
+	whereExists   string
 }
 
 // DB is an entity that composite builder and Conn types
@@ -180,6 +181,20 @@ func (r *DB) Union() *DB {
 func (r *DB) UnionAll() *DB {
 	r.Union()
 	r.Builder.isUnionAll = true
+
+	return r
+}
+
+// WhereExists constructs one builder from another to implement WHERE EXISTS sql/dml clause
+func (r *DB) WhereExists(rr *DB) *DB {
+	r.Builder.whereExists = " WHERE EXISTS(" + rr.Builder.buildSelect() + ")"
+
+	return r
+}
+
+// WhereNotExists constructs one builder from another to implement WHERE NOT EXISTS sql/dml clause
+func (r *DB) WhereNotExists(rr *DB) *DB {
+	r.Builder.whereExists = " WHERE NOT EXISTS(" + rr.Builder.buildSelect() + ")"
 
 	return r
 }

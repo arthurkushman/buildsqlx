@@ -398,3 +398,27 @@ func TestDB_First(t *testing.T) {
 
 	db.Truncate(TestTable)
 }
+
+func TestDB_WhereExists(t *testing.T) {
+	db.Truncate("users")
+
+	err := db.Table("users").InsertBatch(batchUsers)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, er := db.Table("users").Select("name").WhereExists(
+		db.Table("users").Select("name").Where("points", ">=", int64(12345)),
+	).First()
+
+	if er != nil {
+		t.Fatal(err)
+	}
+
+	if res["name"] != "Dead Beaf" {
+		t.Fatalf("want %s, got: %s", "Dead Beaf", res["name"])
+	}
+
+	db.Truncate("users")
+}

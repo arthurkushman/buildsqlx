@@ -207,7 +207,22 @@ tblExists, err := db.HasTable("public", "posts")
 colsExists, err := db.HasColumns("public", "posts", "title", "user_id")
 ```
 
-## First 
+## Retrieving A Single Row / Column From A Table
+If you just need to retrieve a single row from the database table, you may use the first func. 
+This method will return a single `map[string]interface{}`:
 ```go
 res, err := db.Table("posts").Select("title").OrderBy("created_at", "desc").First()
+
+// usage ex: res["title"]
 ```
+
+## WhereExists / WhereNotExists
+The whereExists method allows you to write where exists SQL clauses. 
+The whereExists method accepts a *DB argument, 
+which will receive a query builder instance allowing you to define the query that should be placed inside of the "exists" clause:
+```go
+	res, er := db.Table("users").Select("name").WhereExists(
+		db.Table("users").Select("name").Where("points", ">=", int64(12345)),
+	).First()
+```
+Any query that is of need to build one can place inside `WhereExists` clause/func.
