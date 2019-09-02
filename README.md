@@ -1,5 +1,5 @@
 # arsqlx
-Go Active Record library for postgresql
+Go Database query builder library for postgresql
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/arthurkushman/arsqlx)](https://goreportcard.com/report/github.com/arthurkushman/arsqlx)
 [![GoDoc](https://github.com/golang/gddo/blob/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/arthurkushman/arsqlx)
