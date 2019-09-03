@@ -1,4 +1,4 @@
-module arsqlx
+module buildsqlx
 
 go 1.12
 
