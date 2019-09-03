@@ -1,4 +1,4 @@
-package arsqlx
+package buildsqlx
 
 import (
 	"database/sql"

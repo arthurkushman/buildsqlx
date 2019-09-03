@@ -1,8 +1,8 @@
-# arsqlx
+# buildsqlx
 Go Database query builder library for postgresql
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/arthurkushman/arsqlx)](https://goreportcard.com/report/github.com/arthurkushman/arsqlx)
-[![GoDoc](https://github.com/golang/gddo/blob/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/arthurkushman/arsqlx)
+[![Go Report Card](https://goreportcard.com/badge/github.com/arthurkushman/buildsqlx)](https://goreportcard.com/report/github.com/arthurkushman/buildsqlx)
+[![GoDoc](https://github.com/golang/gddo/blob/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/arthurkushman/buildsqlx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Selects, Ordering, Limit & Offset
@@ -14,10 +14,10 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"arsqlx"
+	"buildsqlx"
 ) 
 
-var db = arsqlx.NewDb(arsqlx.NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
+var db = buildsqlx.NewDb(buildsqlx.NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
 
 func main() {
     qDb := db.Table("table1").Select("foo", "bar")
@@ -46,7 +46,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"arsqlx"
+	"buildsqlx"
 )
 
 func main() {
@@ -88,7 +88,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"arsqlx"
+	"buildsqlx"
 )
 
 func main() {
@@ -129,7 +129,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"arsqlx"
+	"buildsqlx"
 )
 
 func main() {
@@ -185,7 +185,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"arsqlx"
+	"buildsqlx"
 )
 
 func main() {
