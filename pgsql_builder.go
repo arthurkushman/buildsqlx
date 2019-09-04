@@ -453,3 +453,18 @@ func (r *DB) First() (map[string]interface{}, error) {
 
 	return res[0], nil
 }
+
+// Value gets the value of column in first query resulting row
+func (r *DB) Value(column string) (val interface{}, err error) {
+	r.Select(column)
+	res, err := r.First()
+	if err != nil {
+		return
+	}
+
+	if val, ok := res[column]; ok {
+		return val, err
+	}
+
+	return
+}

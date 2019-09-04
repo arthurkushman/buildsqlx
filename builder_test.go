@@ -5,7 +5,10 @@ import (
 	"testing"
 )
 
-const TestTable = "test"
+const (
+	TestTable    = "test"
+	TestUserName = "Dead Beaf"
+)
 
 var db = NewDb(NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
 
@@ -416,8 +419,26 @@ func TestDB_WhereExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if res["name"] != "Dead Beaf" {
-		t.Fatalf("want %s, got: %s", "Dead Beaf", res["name"])
+	if res["name"] != TestUserName {
+		t.Fatalf("want %s, got: %s", TestUserName, res["name"])
+	}
+
+	db.Truncate("users")
+}
+
+func TestDB_Value(t *testing.T) {
+	db.Truncate("users")
+
+	err := db.Table("users").InsertBatch(batchUsers)
+
+	res, err := db.Table("users").OrderBy("points", "desc").Value("name")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res != TestUserName {
+		t.Fatalf("want: %s, got: %s", TestUserName, res)
 	}
 
 	db.Truncate("users")

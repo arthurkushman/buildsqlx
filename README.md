@@ -208,12 +208,19 @@ colsExists, err := db.HasColumns("public", "posts", "title", "user_id")
 ```
 
 ## Retrieving A Single Row / Column From A Table
-If you just need to retrieve a single row from the database table, you may use the first func. 
+If you just need to retrieve a single row from the database table, you may use the `First` func. 
 This method will return a single `map[string]interface{}`:
 ```go
 res, err := db.Table("posts").Select("title").OrderBy("created_at", "desc").First()
 
 // usage ex: res["title"]
+```
+If you don't even need an entire row, you may extract a single value from a record using the `Value` method. 
+This method will return the value of the column directly:
+```go
+res, err := db.Table("users").OrderBy("points", "desc").Value("name")
+
+// res -> "Alex Shmidt"
 ```
 
 ## WhereExists / WhereNotExists
