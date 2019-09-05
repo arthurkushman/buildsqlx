@@ -20,10 +20,10 @@ import (
 var db = buildsqlx.NewDb(buildsqlx.NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
 
 func main() {
-    qDb := db.Table("table1").Select("foo", "bar")
+    qDb := db.Table("posts").Select("title", "body")
 
     // If you already have a query builder instance and you wish to add a column to its existing select clause, you may use the addSelect method:
-    res, err := qDb.AddSelect("baz").GroupBy("foo").OrderBy("bar", "DESC").Limit(15).Offset(5).Get()
+    res, err := qDb.AddSelect("points").GroupBy("topic").OrderBy("points", "DESC").Limit(15).Offset(5).Get()
 }
 ```
 
@@ -66,7 +66,7 @@ res, err := db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name",
 ## WhereNull / WhereNotNull  
 The whereNull method verifies that the value of the given column is NULL:
 ```go
-res, err := db.Table("table1").WhereNull("name").OrWhereNotNull("title").Get()
+res, err := db.Table("posts").WhereNull("points").OrWhereNotNull("title").Get()
 ```
 
 ## Left / Right / Cross / Inner / Left Outer Joins
@@ -113,14 +113,14 @@ the query builder can also update existing records using the update method.
 The update method, like the insert method, accepts a slice of column and value pairs containing the columns to be updated. 
 You may constrain the update query using where clauses:
 ```go
-rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(map[string]interface{}{"foo": "foo changed"})
+rows, err := db.Table("posts").Where("points", ">", 3).Update(map[string]interface{}{"title": "awesome"})
 ```
 
 ## Delete
 The query builder may also be used to delete records from the table via the delete method. 
 You may constrain delete statements by adding where clauses before calling the delete method:
 ```go
-rows, err := db.Table(TestTable).Where("baz", "=", 123).Delete()
+rows, err := db.Table("posts").Where("points", "=", 123).Delete()
 ```
 
 ## Drop, Truncate, Rename
