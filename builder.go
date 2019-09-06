@@ -89,6 +89,7 @@ func (r *DB) reset() {
 	r.Builder.orderBy = map[string]string{}
 	r.Builder.offset = 0
 	r.Builder.limit = 0
+	r.Builder.join = []string{}
 }
 
 // Select accepts columns to select from a table
