@@ -282,7 +282,7 @@ var rowsToReplace = []struct {
 	conflict string
 	replace  map[string]interface{}
 }{
-	{map[string]interface{}{"id": 1, "foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, "id", map[string]interface{}{"id": 1, "foo": "baz baz baz", "baz": 123}},
+	{map[string]interface{}{"id": 1, "foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, "id", map[string]interface{}{"id": 1, "foo": "baz baz baz", "bar": "bar bar bar", "baz": 123}},
 }
 
 func TestDB_Replace(t *testing.T) {
