@@ -21,7 +21,6 @@ const (
 // inner type to build qualified sql
 type builder struct {
 	where         string
-	whereNamed    map[string]interface{}
 	table         string
 	from          string
 	join          []string
@@ -90,6 +89,11 @@ func (r *DB) reset() {
 	r.Builder.offset = 0
 	r.Builder.limit = 0
 	r.Builder.join = []string{}
+	r.Builder.from = ""
+	r.Builder.union = []string{}
+	r.Builder.isUnionAll = false
+	r.Builder.lockForUpdate = nil
+	r.Builder.whereExists = ""
 }
 
 // Select accepts columns to select from a table
