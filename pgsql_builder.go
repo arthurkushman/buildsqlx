@@ -468,3 +468,32 @@ func (r *DB) Value(column string) (val interface{}, err error) {
 
 	return
 }
+
+// Pluck getting values of a particular column and place them into slice
+func (r *DB) Pluck(column string) (val []interface{}, err error) {
+	res, err := r.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	val = make([]interface{}, len(res))
+	for k, m := range res {
+		val[k] = m[column]
+	}
+	return
+}
+
+// PluckMap getting values of a particular key/value columns and place them into map
+func (r *DB) PluckMap(colKey, colValue string) (val []map[interface{}]interface{}, err error) {
+	res, err := r.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	val = make([]map[interface{}]interface{}, len(res))
+	for k, m := range res {
+		val[k] = make(map[interface{}]interface{})
+		val[k][m[colKey]] = m[colValue]
+	}
+	return
+}

@@ -7,6 +7,8 @@ import (
 
 const (
 	TestTable    = "test"
+	PostsTable   = "posts"
+	UsersTable   = "users"
 	TestUserName = "Dead Beaf"
 )
 
@@ -127,8 +129,8 @@ var batchUsers = []map[string]interface{}{
 }
 
 func TestJoins(t *testing.T) {
-	db.Truncate("users")
-	db.Truncate("posts")
+	db.Truncate(UsersTable)
+	db.Truncate(PostsTable)
 
 	var batchPosts []map[string]interface{}
 	for _, v := range batchUsers {
@@ -165,8 +167,8 @@ func TestJoins(t *testing.T) {
 		}
 	}
 
-	db.Truncate("users")
-	db.Truncate("posts")
+	db.Truncate(UsersTable)
+	db.Truncate(PostsTable)
 }
 
 var rowsToUpdate = []struct {
@@ -442,4 +444,49 @@ func TestDB_Value(t *testing.T) {
 	}
 
 	db.Truncate("users")
+}
+
+func TestDB_Pluck(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+
+	res, err := db.Table(UsersTable).Pluck("name")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k, v := range res {
+		resVal := v.(string)
+		if batchUsers[k]["name"] != resVal {
+			t.Fatalf("want: %s, got: %s", batchUsers[k]["name"], resVal)
+		}
+	}
+
+	db.Truncate(UsersTable)
+}
+
+func TestDB_PluckMap(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+
+	res, err := db.Table(UsersTable).PluckMap("name", "points")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k, m := range res {
+		for key, value := range m {
+			keyVal := key.(string)
+			valueVal := value.(int64)
+			if batchUsers[k]["name"] != keyVal || batchUsers[k]["points"] != valueVal {
+				t.Fatalf("want: %s, got: %s and want: %d, got: %d", batchUsers[k]["name"], keyVal, batchUsers[k]["points"], valueVal)
+			}
+		}
+	}
+
+	db.Truncate(UsersTable)
 }
