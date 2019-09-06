@@ -319,6 +319,7 @@ var userForUnion = map[string]interface{}{"id": int64(1), "name": "Alex Shmidt",
 
 func TestDB_Union(t *testing.T) {
 	db.Truncate(TestTable)
+	db.Truncate("users")
 
 	err := db.Table(TestTable).Insert(dataMap)
 
@@ -326,18 +327,23 @@ func TestDB_Union(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	db.Table("users").Insert(userForUnion)
+	err = db.Table("users").Insert(userForUnion)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	union := db.Table(TestTable).Select("bar", "baz").Union()
 
 	res, _ := union.Table("users").Select("name", "points").Get()
 
 	for _, v := range res {
-		if v["baz"] != userForUnion["points"] {
-			t.Fatalf("want %d, got %d", userForUnion["points"], v["baz"])
+		if v["points"] != userForUnion["points"] {
+			t.Fatalf("want %d, got %d", userForUnion["points"], v["points"])
 		}
 	}
 
+	db.Truncate("users")
 	db.Truncate(TestTable)
 }
 
