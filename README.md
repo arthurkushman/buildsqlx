@@ -234,3 +234,11 @@ res, er := db.Table("users").Select("name").WhereExists(
 ).First()
 ```
 Any query that is of need to build one can place inside `WhereExists` clause/func.
+
+## Determining If Records Exist
+Instead of using the count method to determine if any records exist that match your query's constraints, 
+you may use the exists and doesntExist methods:
+```go
+exists, err := db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)).Exists()
+// use an inverse DoesntExists() if needed
+```

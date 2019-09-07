@@ -84,21 +84,26 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 func (r *builder) buildSelect() string {
 	query := "SELECT " + strings.Join(r.columns, ", ") + " FROM " + r.table
 
+	return query + r.buildClauses()
+}
+
+func (r *builder) buildClauses() string {
+	clauses := ""
 	for _, j := range r.join {
-		query += j
+		clauses += j
 	}
 
 	// build where clause
 	if r.where != "" {
-		query += " WHERE " + r.where
+		clauses += " WHERE " + r.where
 	}
 
 	if r.groupBy != "" {
-		query += " GROUP BY " + r.groupBy
+		clauses += " GROUP BY " + r.groupBy
 	}
 
 	if r.having != "" {
-		query += " HAVING " + r.having
+		clauses += " HAVING " + r.having
 	}
 
 	if len(r.orderBy) > 0 {
@@ -111,22 +116,22 @@ func (r *builder) buildSelect() string {
 			}
 		}
 
-		query += orderStr
+		clauses += orderStr
 	}
 
 	if r.limit > 0 {
-		query += " LIMIT " + strconv.FormatInt(r.limit, 10)
+		clauses += " LIMIT " + strconv.FormatInt(r.limit, 10)
 	}
 
 	if r.offset > 0 {
-		query += " OFFSET " + strconv.FormatInt(r.offset, 10)
+		clauses += " OFFSET " + strconv.FormatInt(r.offset, 10)
 	}
 
 	if r.lockForUpdate != nil {
-		query += *r.lockForUpdate
+		clauses += *r.lockForUpdate
 	}
 
-	return query
+	return clauses
 }
 
 // Insert inserts one row with param bindings
@@ -496,4 +501,25 @@ func (r *DB) PluckMap(colKey, colValue string) (val []map[interface{}]interface{
 		val[k][m[colKey]] = m[colValue]
 	}
 	return
+}
+
+// Exists checks whether conditional rows are existing (returns true) or not (returns false)
+func (r *DB) Exists() (exists bool, err error) {
+	builder := r.Builder
+	if builder.table == "" {
+		return false, fmt.Errorf(ErrTableCallBeforeOp)
+	}
+
+	query := "SELECT EXISTS(SELECT 1 FROM " + builder.table + builder.buildClauses() + ")"
+	err = r.Sql().QueryRow(query).Scan(&exists)
+	return
+}
+
+// DoesntExists an inverse of Exists
+func (r *DB) DoesntExists() (bool, error) {
+	ex, err := r.Exists()
+	if err != nil {
+		return false, err
+	}
+	return !ex, nil
 }

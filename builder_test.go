@@ -2,6 +2,7 @@ package buildsqlx
 
 import (
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -134,7 +135,7 @@ func TestJoins(t *testing.T) {
 
 	var batchPosts []map[string]interface{}
 	for _, v := range batchUsers {
-		id, err := db.Table("users").InsertGetId(v)
+		id, err := db.Table(UsersTable).InsertGetId(v)
 
 		if err != nil {
 			t.Fatal(err)
@@ -145,13 +146,13 @@ func TestJoins(t *testing.T) {
 		})
 	}
 
-	err := db.Table("posts").InsertBatch(batchPosts)
+	err := db.Table(PostsTable).InsertBatch(batchPosts)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
+	res, err := db.Table(UsersTable).Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
 
 	if err != nil {
 		t.Fatal(err)
@@ -321,7 +322,7 @@ var userForUnion = map[string]interface{}{"id": int64(1), "name": "Alex Shmidt",
 
 func TestDB_Union(t *testing.T) {
 	db.Truncate(TestTable)
-	db.Truncate("users")
+	db.Truncate(UsersTable)
 
 	err := db.Table(TestTable).Insert(dataMap)
 
@@ -329,7 +330,7 @@ func TestDB_Union(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = db.Table("users").Insert(userForUnion)
+	err = db.Table(UsersTable).Insert(userForUnion)
 
 	if err != nil {
 		t.Fatal(err)
@@ -337,7 +338,7 @@ func TestDB_Union(t *testing.T) {
 
 	union := db.Table(TestTable).Select("bar", "baz").Union()
 
-	res, _ := union.Table("users").Select("name", "points").Get()
+	res, _ := union.Table(UsersTable).Select("name", "points").Get()
 
 	for _, v := range res {
 		if v["points"] != userForUnion["points"] {
@@ -345,7 +346,7 @@ func TestDB_Union(t *testing.T) {
 		}
 	}
 
-	db.Truncate("users")
+	db.Truncate(UsersTable)
 	db.Truncate(TestTable)
 }
 
@@ -366,7 +367,7 @@ func TestDB_InTransaction(t *testing.T) {
 }
 
 func TestDB_HasTable(t *testing.T) {
-	tblExists, err := db.HasTable("public", "posts")
+	tblExists, err := db.HasTable("public", PostsTable)
 
 	if err != nil {
 		t.Fatal(err)
@@ -378,7 +379,7 @@ func TestDB_HasTable(t *testing.T) {
 }
 
 func TestDB_HasColumns(t *testing.T) {
-	colsExists, err := db.HasColumns("public", "posts", "title", "user_id")
+	colsExists, err := db.HasColumns("public", PostsTable, "title", "user_id")
 
 	if err != nil {
 		t.Fatal(err)
@@ -411,16 +412,16 @@ func TestDB_First(t *testing.T) {
 }
 
 func TestDB_WhereExists(t *testing.T) {
-	db.Truncate("users")
+	db.Truncate(UsersTable)
 
-	err := db.Table("users").InsertBatch(batchUsers)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	res, er := db.Table("users").Select("name").WhereExists(
-		db.Table("users").Select("name").Where("points", ">=", int64(12345)),
+	res, er := db.Table(UsersTable).Select("name").WhereExists(
+		db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)),
 	).First()
 
 	if er != nil {
@@ -431,15 +432,15 @@ func TestDB_WhereExists(t *testing.T) {
 		t.Fatalf("want %s, got: %s", TestUserName, res["name"])
 	}
 
-	db.Truncate("users")
+	db.Truncate(UsersTable)
 }
 
 func TestDB_Value(t *testing.T) {
-	db.Truncate("users")
+	db.Truncate(UsersTable)
 
-	err := db.Table("users").InsertBatch(batchUsers)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
 
-	res, err := db.Table("users").OrderBy("points", "desc").Value("name")
+	res, err := db.Table(UsersTable).OrderBy("points", "desc").Value("name")
 
 	if err != nil {
 		t.Fatal(err)
@@ -449,7 +450,7 @@ func TestDB_Value(t *testing.T) {
 		t.Fatalf("want: %s, got: %s", TestUserName, res)
 	}
 
-	db.Truncate("users")
+	db.Truncate(UsersTable)
 }
 
 func TestDB_Pluck(t *testing.T) {
@@ -493,6 +494,35 @@ func TestDB_PluckMap(t *testing.T) {
 			}
 		}
 	}
+
+	db.Truncate(UsersTable)
+}
+
+func TestDB_Exists(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prepared := db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345))
+
+	exists, err := prepared.Exists()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	doesntEx, err := prepared.DoesntExists()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.True(t, exists, "The record must exist at this state of db data")
+	assert.False(t, doesntEx, "The record must exist at this state of db data")
 
 	db.Truncate(UsersTable)
 }
