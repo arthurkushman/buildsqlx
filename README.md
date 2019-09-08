@@ -242,3 +242,18 @@ you may use the exists and doesntExist methods:
 exists, err := db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)).Exists()
 // use an inverse DoesntExists() if needed
 ```
+
+## Aggregates
+The query builder also provides a variety of aggregate methods such as Count, Max, Min, Avg, and Sum. 
+You may call any of these methods after constructing your query:
+```go
+cnt, err := db.Table(UsersTable).WHere("points", ">=", 1234).Count()
+
+avg, err := db.Table(UsersTable).Avg("points")
+
+mx, err := db.Table(UsersTable).Max("points")
+
+mn, err := db.Table(UsersTable).Min("points")
+
+sum, err := db.Table(UsersTable).Sum("points")
+```

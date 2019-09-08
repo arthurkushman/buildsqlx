@@ -526,3 +526,99 @@ func TestDB_Exists(t *testing.T) {
 
 	db.Truncate(UsersTable)
 }
+
+func TestDB_Count(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cnt, err := db.Table(UsersTable).Count()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equalf(t, int64(len(batchUsers)), cnt, "want: %d, got: %d", len(batchUsers), cnt)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_Avg(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	avg, err := db.Table(UsersTable).Avg("points")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var cntBatch float64
+	for _, v := range batchUsers {
+		cntBatch += float64(v["points"].(int64)) / float64(len(batchUsers))
+	}
+
+	assert.Equalf(t, cntBatch, avg, "want: %d, got: %d", cntBatch, avg)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_MinMax(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mn, err := db.Table(UsersTable).Min("points")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mx, err := db.Table(UsersTable).Max("points")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var max float64
+	var min = float64(123456)
+	for _, v := range batchUsers {
+		val := float64(v["points"].(int64))
+		if val > max {
+			max = val
+		}
+		if val < min {
+			min = val
+		}
+	}
+
+	assert.Equalf(t, mn, min, "want: %d, got: %d", mn, min)
+	assert.Equalf(t, mx, max, "want: %d, got: %d", mx, max)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_Sum(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sum, err := db.Table(UsersTable).Sum("points")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var cntBatch float64
+	for _, v := range batchUsers {
+		cntBatch += float64(v["points"].(int64))
+	}
+
+	assert.Equalf(t, cntBatch, sum, "want: %d, got: %d", cntBatch, sum)
+	db.Truncate(UsersTable)
+}
