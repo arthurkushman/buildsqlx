@@ -352,10 +352,22 @@ func TestDB_WhereExists(t *testing.T) {
 		db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)),
 	).First()
 	assert.NoError(t, er)
+	assert.Equal(t, TestUserName, res["name"])
 
-	if res["name"] != TestUserName {
-		t.Fatalf("want %s, got: %s", TestUserName, res["name"])
-	}
+	db.Truncate(UsersTable)
+}
+
+func TestDB_WhereNotExists(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, er := db.Table(UsersTable).Select("name").WhereNotExists(
+		db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)),
+	).First()
+	assert.NoError(t, er)
+	assert.Equal(t, TestUserName, res["name"])
 
 	db.Truncate(UsersTable)
 }

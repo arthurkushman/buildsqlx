@@ -12,7 +12,10 @@ func (r *DB) First() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	return res[0], nil
+	if len(res) > 0 {
+		return res[0], nil
+	}
+	return nil, fmt.Errorf("no records were produced by query: %s", r.Builder.buildSelect())
 }
 
 // Value gets the value of column in first query resulting row
