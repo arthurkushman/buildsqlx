@@ -555,6 +555,11 @@ func TestDB_AllJoins(t *testing.T) {
 
 	assert.Equal(t, len(res), len(batchUsers))
 
+	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(res), len(batchUsers))
+
 	db.Truncate(PostsTable)
 	db.Truncate(UsersTable)
 }
