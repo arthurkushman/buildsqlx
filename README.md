@@ -1,5 +1,5 @@
 # buildsqlx
-Go Database query builder library for postgresql [![Tweet](http://jpillora.com/github-twitter-button/img/tweet.png)](https://twitter.com/intent/tweet?text=Go%20database%20query%20builder%20library%20for%20postgresql%20&url=https://github.com/arthurkushman/buildsqlx&hashtags=go,golang,sql,builder,postgresql,sql-builder,developers)
+Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-button/img/tweet.png)](https://twitter.com/intent/tweet?text=Go%20database%20query%20builder%20library%20&url=https://github.com/arthurkushman/buildsqlx&hashtags=go,golang,sql,builder,postgresql,mysql,sql-builder,developers)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/arthurkushman/buildsqlx)](https://goreportcard.com/report/github.com/arthurkushman/buildsqlx)
 [![GoDoc](https://github.com/golang/gddo/blob/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/arthurkushman/buildsqlx)
