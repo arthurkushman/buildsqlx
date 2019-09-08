@@ -25,10 +25,7 @@ func TestSelectAndLimit(t *testing.T) {
 	qDb := db.Table(TestTable).Select("foo", "bar")
 
 	res, err := qDb.AddSelect("baz").Limit(15).Get()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for k, mapVal := range dataMap {
 		for _, v := range res {
@@ -45,16 +42,10 @@ func TestInsert(t *testing.T) {
 	db.Truncate(TestTable)
 
 	err := db.Table(TestTable).Insert(dataMap)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Get()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for k, mapVal := range dataMap {
 		for _, v := range res {
@@ -77,16 +68,10 @@ func TestInsertBatchSelectMultiple(t *testing.T) {
 	db.Truncate(TestTable)
 
 	err := db.Table(TestTable).InsertBatch(batchData)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").OrderBy("foo", "ASC").Get()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for mapKey, mapVal := range batchData {
 		for k, mV := range mapVal {
@@ -105,12 +90,9 @@ func TestWhereAndOr(t *testing.T) {
 	db.Truncate(TestTable)
 
 	err := db.Table(TestTable).InsertBatch(batchData)
-
+	assert.NoError(t, err)
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	if res[0]["foo"] != cmp {
 		t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
@@ -127,36 +109,34 @@ var batchUsers = []map[string]interface{}{
 	0: {"id": int64(1), "name": "Alex Shmidt", "points": int64(123)},
 	1: {"id": int64(2), "name": "Darth Vader", "points": int64(1234)},
 	2: {"id": int64(3), "name": "Dead Beaf", "points": int64(12345)},
+	3: {"id": int64(4), "name": "Dead Beaf", "points": int64(12345)},
+}
+
+var batchPosts = []map[string]interface{}{
+	0: {"id": int64(1), "title": "Lorem ipsum dolor sit amet,", "post": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "user_id": int64(1)},
+	1: {"id": int64(2), "title": "Sed ut perspiciatis unde omnis iste natus", "post": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.", "user_id": int64(2)},
+	2: {"id": int64(3), "title": "Ut enim ad minima veniam", "post": "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?", "user_id": int64(3)},
 }
 
 func TestJoins(t *testing.T) {
 	db.Truncate(UsersTable)
 	db.Truncate(PostsTable)
 
-	var batchPosts []map[string]interface{}
+	var posts []map[string]interface{}
 	for _, v := range batchUsers {
 		id, err := db.Table(UsersTable).InsertGetId(v)
+		assert.NoError(t, err)
 
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		batchPosts = append(batchPosts, map[string]interface{}{
+		posts = append(posts, map[string]interface{}{
 			"title": "ttl", "post": "foo bar baz", "user_id": id,
 		})
 	}
 
-	err := db.Table(PostsTable).InsertBatch(batchPosts)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	err := db.Table(PostsTable).InsertBatch(posts)
+	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for k, val := range res {
 		if val["name"] != batchUsers[k]["name"] {
@@ -184,16 +164,10 @@ func TestUpdate(t *testing.T) {
 
 	for _, obj := range rowsToUpdate {
 		err := db.Table(TestTable).Insert(obj.insert)
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(obj.update)
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		if rows < 1 {
 			t.Fatalf("Can not update rows: %s", obj.update)
@@ -215,16 +189,10 @@ func TestDelete(t *testing.T) {
 
 	for _, obj := range rowsToDelete {
 		err := db.Table(TestTable).Insert(obj.insert)
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		rows, err := db.Table(TestTable).Where("baz", "=", obj.where["bar"]).Delete()
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		if rows < 1 {
 			t.Fatalf("Can not delete rows: %s", obj.where)
@@ -247,18 +215,12 @@ func TestDB_Increment_Decrement(t *testing.T) {
 
 	for _, obj := range incrDecr {
 		err := db.Table(TestTable).Insert(obj.insert)
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		db.Table(TestTable).Increment("baz", obj.incr)
 
 		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.incrRes).Get()
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		if len(res) < 1 && res[0]["baz"] != obj.incrRes {
 			t.Fatalf("want %d, got %d", res[0]["baz"], obj.incrRes)
@@ -267,10 +229,7 @@ func TestDB_Increment_Decrement(t *testing.T) {
 		db.Table(TestTable).Decrement("baz", obj.decr)
 
 		res, err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.decrRes).Get()
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		if len(res) < 1 && res[0]["baz"] != obj.decrRes {
 			t.Fatalf("want %d, got %d", res[0]["baz"], obj.decrRes)
@@ -293,23 +252,16 @@ func TestDB_Replace(t *testing.T) {
 
 	for _, obj := range rowsToReplace {
 		rows, err := db.Table(TestTable).Replace(obj.insert, obj.conflict)
-
-		if rows < 1 {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		rows, err = db.Table(TestTable).Replace(obj.replace, obj.conflict)
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		if rows < 1 {
 			t.Fatal(err)
 		}
 
 		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.replace["baz"]).Get()
-
 		if len(res) < 1 && res[0]["foo"] != obj.replace["foo"] {
 			t.Fatalf("want %d, got %d", obj.replace["foo"], res[0]["foo"])
 		}
@@ -325,21 +277,12 @@ func TestDB_Union(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(TestTable).Insert(dataMap)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, err)
 	err = db.Table(UsersTable).Insert(userForUnion)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	union := db.Table(TestTable).Select("bar", "baz").Union()
-
 	res, _ := union.Table(UsersTable).Select("name", "points").Get()
-
 	for _, v := range res {
 		if v["points"] != userForUnion["points"] {
 			t.Fatalf("want %d, got %d", userForUnion["points"], v["points"])
@@ -360,18 +303,12 @@ func TestDB_InTransaction(t *testing.T) {
 
 		return 1, err
 	})
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestDB_HasTable(t *testing.T) {
 	tblExists, err := db.HasTable("public", PostsTable)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	if !tblExists {
 		t.Fatalf("expected: true, got: false")
@@ -380,10 +317,7 @@ func TestDB_HasTable(t *testing.T) {
 
 func TestDB_HasColumns(t *testing.T) {
 	colsExists, err := db.HasColumns("public", PostsTable, "title", "user_id")
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	if !colsExists {
 		t.Fatalf("expected: true, got: false")
@@ -394,10 +328,7 @@ func TestDB_First(t *testing.T) {
 	db.Truncate(TestTable)
 
 	err := db.Table(TestTable).Insert(dataMap)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	// write concurrent row ot order and get the only 1st
 	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
@@ -415,18 +346,12 @@ func TestDB_WhereExists(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	res, er := db.Table(UsersTable).Select("name").WhereExists(
 		db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)),
 	).First()
-
-	if er != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, er)
 
 	if res["name"] != TestUserName {
 		t.Fatalf("want %s, got: %s", TestUserName, res["name"])
@@ -439,12 +364,9 @@ func TestDB_Value(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-
+	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).OrderBy("points", "desc").Value("name")
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	if res != TestUserName {
 		t.Fatalf("want: %s, got: %s", TestUserName, res)
@@ -457,12 +379,9 @@ func TestDB_Pluck(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-
+	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).Pluck("name")
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for k, v := range res {
 		resVal := v.(string)
@@ -478,12 +397,9 @@ func TestDB_PluckMap(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-
+	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).PluckMap("name", "points")
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for k, m := range res {
 		for key, value := range m {
@@ -502,24 +418,15 @@ func TestDB_Exists(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	prepared := db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345))
 
 	exists, err := prepared.Exists()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	doesntEx, err := prepared.DoesntExists()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, exists, "The record must exist at this state of db data")
 	assert.False(t, doesntEx, "The record must exist at this state of db data")
@@ -531,14 +438,10 @@ func TestDB_Count(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	cnt, err := db.Table(UsersTable).Count()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equalf(t, int64(len(batchUsers)), cnt, "want: %d, got: %d", len(batchUsers), cnt)
 	db.Truncate(UsersTable)
@@ -548,14 +451,10 @@ func TestDB_Avg(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	avg, err := db.Table(UsersTable).Avg("points")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	var cntBatch float64
 	for _, v := range batchUsers {
@@ -570,19 +469,13 @@ func TestDB_MinMax(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	mn, err := db.Table(UsersTable).Min("points")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	mx, err := db.Table(UsersTable).Max("points")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	var max float64
 	var min = float64(123456)
@@ -605,14 +498,10 @@ func TestDB_Sum(t *testing.T) {
 	db.Truncate(UsersTable)
 
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	sum, err := db.Table(UsersTable).Sum("points")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	var cntBatch float64
 	for _, v := range batchUsers {
@@ -620,5 +509,52 @@ func TestDB_Sum(t *testing.T) {
 	}
 
 	assert.Equalf(t, cntBatch, sum, "want: %d, got: %d", cntBatch, sum)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_GroupByHaving(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("points").GroupBy("points").Having("points", ">=", 123).Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), len(batchUsers)-1)
+
+	db.Truncate(UsersTable)
+}
+
+func TestDB_AllJoins(t *testing.T) {
+	db.Truncate(PostsTable)
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	err = db.Table(PostsTable).InsertBatch(batchPosts)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name", "post", "user_id").InnerJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(res), len(batchPosts))
+
+	res, err = db.Table(PostsTable).Select("name", "post", "user_id").RightJoin(UsersTable, "posts.user_id", "=", "users.id").Get()
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(res), len(batchUsers))
+
+	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(res), len(batchUsers))
+
+	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(res), len(batchUsers))
+
+	db.Truncate(PostsTable)
 	db.Truncate(UsersTable)
 }

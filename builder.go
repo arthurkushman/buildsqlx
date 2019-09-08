@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	JoinInner     = "INNER"
-	JoinCross     = "CROSS"
+	JoinInner = "INNER"
+	//JoinCross     = "CROSS"
 	JoinLeft      = "LEFT"
 	JoinRight     = "RIGHT"
 	JoinFull      = "FULL"
@@ -161,9 +161,10 @@ func (r *DB) RightJoin(table string, left string, operator string, right string)
 }
 
 // CrossJoin joins tables by getting intersection of sets
-func (r *DB) CrossJoin(table string, left string, operator string, right string) *DB {
-	return r.buildJoin(JoinCross, table, left+operator+right)
-}
+// todo: MySQL/PostgreSQL versions are different here impl their difference
+//func (r *DB) CrossJoin(table string, left string, operator string, right string) *DB {
+//	return r.buildJoin(JoinCross, table, left+operator+right)
+//}
 
 // FullJoin joins tables by getting all elements of both sets
 func (r *DB) FullJoin(table string, left string, operator string, right string) *DB {
