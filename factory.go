@@ -117,9 +117,7 @@ func (r *builder) buildClauses() string {
 		}
 
 		clauses += orderStr
-	}
-
-	if r.orderByRaw != nil {
+	} else if r.orderByRaw != nil {
 		clauses += " ORDER BY " + *r.orderByRaw
 	}
 
