@@ -6,6 +6,27 @@ Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-b
 [![codecov](https://codecov.io/gh/arthurkushman/buildsqlx/branch/master/graph/badge.svg)](https://codecov.io/gh/arthurkushman/buildsqlx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+* [Selects, Ordering, Limit & Offset](#user-content-selects-ordering-limit--offset)
+* [GroupBy / Having](#user-content-groupby--having)
+* [Where, AndWhere, OrWhere clauses](#user-content-where-andwhere-orwhere-clauses)
+* [WhereIn / WhereNotIn](#user-content-wherein--wherenotin)
+* [WhereNull / WhereNotNull](#user-content-wherenull--wherenotnull)
+* [Left / Right / Cross / Inner / Left Outer Joins](#user-content-left--right--cross--inner--left-outer-joins)
+* [Inserts](#user-content-inserts)
+* [Updates](#user-content-updates)
+* [Delete](#user-content-delete)
+* [Drop, Truncate, Rename](#user-content-drop-truncate-rename)
+* [Increment & Decrement](#user-content-increment--decrement)
+* [Union / Union All](#user-content-union--union-all)
+* [Transaction mode](#user-content-transaction-mode)
+* [Dump, Dd](#user-content-dump-dd)
+* [Check if table exists](#user-content-check-if-table-exists)
+* [Check if columns exist in a table within schema](#user-content-check-if-columns-exist-in-a-table-within-schema)
+* [Retrieving A Single Row / Column From A Table](#user-content-retrieving-a-single-row--column-from-a-table)
+* [WhereExists / WhereNotExists](#user-content-whereexists--wherenotexists)
+* [Determining If Records Exist](#user-content-determining-if-records-exist)
+* [Aggregates](#user-content-aggregates)
+
 ## Selects, Ordering, Limit & Offset
 
 You may not always want to select all columns from a database table. Using the select method, you can specify a custom select clause for the query:
