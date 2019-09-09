@@ -103,7 +103,7 @@ func TestWhereAndOr(t *testing.T) {
 
 //var users = `create table users (id serial primary key, name varchar(128) not null, points integer)`
 //
-//var posts = `create table posts (id serial primary key, title varchar(128) not null, post text, user_id integer)`
+//var posts = `create table posts (id serial primary key, title varchar(128) not null, post text, user_id integer, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`
 
 var batchUsers = []map[string]interface{}{
 	0: {"id": int64(1), "name": "Alex Shmidt", "points": int64(123)},
@@ -113,9 +113,9 @@ var batchUsers = []map[string]interface{}{
 }
 
 var batchPosts = []map[string]interface{}{
-	0: {"id": int64(1), "title": "Lorem ipsum dolor sit amet,", "post": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "user_id": int64(1)},
-	1: {"id": int64(2), "title": "Sed ut perspiciatis unde omnis iste natus", "post": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.", "user_id": int64(2)},
-	2: {"id": int64(3), "title": "Ut enim ad minima veniam", "post": "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?", "user_id": int64(3)},
+	0: {"id": int64(1), "title": "Lorem ipsum dolor sit amet,", "post": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "user_id": int64(1), "updated_at": "2086-09-09 18:27:40"},
+	1: {"id": int64(2), "title": "Sed ut perspiciatis unde omnis iste natus", "post": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.", "user_id": int64(2), "updated_at": "2087-09-09 18:27:40"},
+	2: {"id": int64(3), "title": "Ut enim ad minima veniam", "post": "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?", "user_id": int64(3), "updated_at": "2088-09-09 18:27:40"},
 }
 
 func TestJoins(t *testing.T) {
@@ -574,4 +574,18 @@ func TestDB_AllJoins(t *testing.T) {
 
 	db.Truncate(PostsTable)
 	db.Truncate(UsersTable)
+}
+
+func TestDB_OrderByRaw(t *testing.T) {
+	db.Truncate(PostsTable)
+
+	err := db.Table(PostsTable).InsertBatch(batchPosts)
+	assert.NoError(t, err)
+
+	res, err := db.Table(PostsTable).Select("title").OrderByRaw("updated_at - created_at DESC").First()
+	assert.NoError(t, err)
+
+	assert.Equal(t, batchPosts[2]["title"], res["title"])
+
+	db.Truncate(PostsTable)
 }

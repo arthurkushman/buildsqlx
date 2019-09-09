@@ -25,6 +25,7 @@ type builder struct {
 	from          string
 	join          []string
 	orderBy       map[string]string
+	orderByRaw    *string
 	groupBy       string
 	having        string
 	columns       []string
@@ -94,6 +95,7 @@ func (r *DB) reset() {
 	r.Builder.isUnionAll = false
 	r.Builder.lockForUpdate = nil
 	r.Builder.whereExists = ""
+	r.Builder.orderByRaw = nil
 }
 
 // Select accepts columns to select from a table
@@ -104,13 +106,20 @@ func (r *DB) Select(args ...string) *DB {
 	return r
 }
 
-// GroupBy adds ORDER BY expression to SQL stmt
+// OrderBy adds ORDER BY expression to SQL stmt
 func (r *DB) OrderBy(column string, direction string) *DB {
 	if len(r.Builder.orderBy) == 0 {
 		r.Builder.orderBy = make(map[string]string)
 	}
 
 	r.Builder.orderBy[column] = direction
+
+	return r
+}
+
+// OrderByRaw adds ORDER BY raw expression to SQL stmt
+func (r *DB) OrderByRaw(exp string) *DB {
+	r.Builder.orderByRaw = &exp
 
 	return r
 }

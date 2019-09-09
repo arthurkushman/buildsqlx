@@ -119,6 +119,10 @@ func (r *builder) buildClauses() string {
 		clauses += orderStr
 	}
 
+	if r.orderByRaw != nil {
+		clauses += " ORDER BY " + *r.orderByRaw
+	}
+
 	if r.limit > 0 {
 		clauses += " LIMIT " + strconv.FormatInt(r.limit, 10)
 	}
