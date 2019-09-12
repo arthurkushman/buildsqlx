@@ -333,7 +333,7 @@ func TestDB_First(t *testing.T) {
 	// write concurrent row ot order and get the only 1st
 	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
 
-	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").First()
+	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
 
 	if res["baz"] != int64(1234) {
 		t.Fatalf("want: %d, got: %d", int64(1234), res["baz"])

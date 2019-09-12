@@ -148,14 +148,16 @@ func composeWhere(whereBindings []map[string]interface{}, startedAt int) string 
 }
 
 // composers ORDER BY clause string for particular query stmt
-func composeOrderBy(orderBy map[string]string, orderByRaw *string) string {
+func composeOrderBy(orderBy []map[string]string, orderByRaw *string) string {
 	if len(orderBy) > 0 {
 		orderStr := ""
-		for field, direct := range orderBy {
-			if orderStr == "" {
-				orderStr = " ORDER BY " + field + " " + direct
-			} else {
-				orderStr += ", " + field + " " + direct
+		for _, m := range orderBy {
+			for field, direct := range m {
+				if orderStr == "" {
+					orderStr = " ORDER BY " + field + " " + direct
+				} else {
+					orderStr += ", " + field + " " + direct
+				}
 			}
 		}
 		return orderStr
