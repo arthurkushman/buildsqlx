@@ -37,7 +37,7 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 		query = builder.buildSelect()
 	}
 
-	rows, err := r.Sql().Query(query)
+	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +80,15 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	return res, nil
 }
 
+func prepareValues(values []map[string]interface{}) []interface{} {
+	var vls []interface{}
+	for _, v := range values {
+		_, vals, _ := prepareBindings(v, true)
+		vls = append(vls, vals...)
+	}
+	return vls
+}
+
 // buildSelect constructs a query for select statement
 func (r *builder) buildSelect() string {
 	query := "SELECT " + strings.Join(r.columns, ", ") + " FROM " + r.table
@@ -87,6 +96,7 @@ func (r *builder) buildSelect() string {
 	return query + r.buildClauses()
 }
 
+// builds query string clauses
 func (r *builder) buildClauses() string {
 	clauses := ""
 	for _, j := range r.join {
@@ -94,8 +104,8 @@ func (r *builder) buildClauses() string {
 	}
 
 	// build where clause
-	if r.where != "" {
-		clauses += " WHERE " + r.where
+	if len(r.whereBindings) > 0 {
+		clauses += composeWhere(r.whereBindings)
 	}
 
 	if r.groupBy != "" {
@@ -106,20 +116,7 @@ func (r *builder) buildClauses() string {
 		clauses += " HAVING " + r.having
 	}
 
-	if len(r.orderBy) > 0 {
-		orderStr := ""
-		for field, direct := range r.orderBy {
-			if orderStr == "" {
-				orderStr = " ORDER BY " + field + " " + direct
-			} else {
-				orderStr += ", " + field + " " + direct
-			}
-		}
-
-		clauses += orderStr
-	} else if r.orderByRaw != nil {
-		clauses += " ORDER BY " + *r.orderByRaw
-	}
+	clauses += composeOrderBy(r.orderBy, r.orderByRaw)
 
 	if r.limit > 0 {
 		clauses += " LIMIT " + strconv.FormatInt(r.limit, 10)
@@ -136,6 +133,38 @@ func (r *builder) buildClauses() string {
 	return clauses
 }
 
+// composes WHERE clause string for particular query stmt
+func composeWhere(whereBindings []map[string]interface{}) string {
+	where := " WHERE "
+	i := 1
+	for _, m := range whereBindings {
+		for k := range m {
+			// operand >= $i
+			where += k + " $" + strconv.Itoa(i)
+			i++
+		}
+	}
+	return where
+}
+
+// composers ORDER BY clause string for particular query stmt
+func composeOrderBy(orderBy map[string]string, orderByRaw *string) string {
+	if len(orderBy) > 0 {
+		orderStr := ""
+		for field, direct := range orderBy {
+			if orderStr == "" {
+				orderStr = " ORDER BY " + field + " " + direct
+			} else {
+				orderStr += ", " + field + " " + direct
+			}
+		}
+		return orderStr
+	} else if orderByRaw != nil {
+		return " ORDER BY " + *orderByRaw
+	}
+	return ""
+}
+
 // Insert inserts one row with param bindings
 func (r *DB) Insert(data map[string]interface{}) error {
 	builder := r.Builder
@@ -143,7 +172,7 @@ func (r *DB) Insert(data map[string]interface{}) error {
 		return fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindings(data, false)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ")"
 
@@ -163,7 +192,7 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 		return 0, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindings(data, false)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") RETURNING id"
 
@@ -178,7 +207,7 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 }
 
 // prepareBindings prepares slices to split in favor of INSERT sql statement
-func prepareBindings(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
+func prepareBindings(data map[string]interface{}, where bool) (columns []string, values []interface{}, bindings []string) {
 
 	i := 1
 	for column, value := range data {
@@ -186,7 +215,11 @@ func prepareBindings(data map[string]interface{}) (columns []string, values []in
 
 		switch v := value.(type) {
 		case string:
-			values = append(values, v)
+			if where {
+				values = append(values, "'"+v+"'")
+			} else {
+				values = append(values, v)
+			}
 			break
 		case int:
 			values = append(values, strconv.FormatInt(int64(v), 10))
@@ -301,7 +334,7 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 		return 0, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindings(data, false)
 
 	setVal := ""
 	l := len(columns)
@@ -359,7 +392,7 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 		return 0, fmt.Errorf(ErrTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindings(data, false)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") ON CONFLICT(" + conflict + ") DO UPDATE SET "
 

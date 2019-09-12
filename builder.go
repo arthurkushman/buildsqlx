@@ -20,6 +20,7 @@ const (
 
 // inner type to build qualified sql
 type builder struct {
+	whereBindings []map[string]interface{}
 	where         string
 	table         string
 	from          string
@@ -84,6 +85,7 @@ func (r *DB) reset() {
 	r.Builder.table = ""
 	r.Builder.columns = []string{"*"}
 	r.Builder.where = ""
+	r.Builder.whereBindings = make([]map[string]interface{}, 0)
 	r.Builder.groupBy = ""
 	r.Builder.having = ""
 	r.Builder.orderBy = map[string]string{}
@@ -221,25 +223,28 @@ func (r *DB) buildJoin(joinType string, table string, on string) *DB {
 }
 
 // Where accepts left operand-operator-right operand to apply them to where clause
-func (r *DB) Where(operand string, operator string, val interface{}) *DB {
-	r.Builder.where = operand + " " + operator + " " + convertToStr(val)
-
-	return r
+func (r *DB) Where(operand, operator string, val interface{}) *DB {
+	return r.buildWhere("", operand, operator, val)
 }
 
 // Where accepts left operand-operator-right operand to apply them to where clause
 // with AND logical operator
-func (r *DB) AndWhere(operand string, operator string, val interface{}) *DB {
-	r.Builder.where += " AND " + operand + " " + operator + " " + convertToStr(val)
-
-	return r
+func (r *DB) AndWhere(operand, operator string, val interface{}) *DB {
+	return r.buildWhere("AND", operand, operator, val)
 }
 
 // OrWhere accepts left operand-operator-right operand to apply them to where clause
 // with OR logical operator
-func (r *DB) OrWhere(operand string, operator string, val interface{}) *DB {
-	r.Builder.where += " OR " + operand + " " + operator + " " + convertToStr(val)
+func (r *DB) OrWhere(operand, operator string, val interface{}) *DB {
+	return r.buildWhere("OR", operand, operator, val)
+}
 
+func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
+	if prefix != "" {
+		r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{" " + prefix + " " + operand + " " + operator: val})
+	} else {
+		r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{operand + " " + operator: val})
+	}
 	return r
 }
 
@@ -403,7 +408,7 @@ func (r *DB) AndWhereNotNull(field string) *DB {
 	return r
 }
 
-// prepares slice for IN/NOT IN etc
+// prepares slice for Where bindings, IN/NOT IN etc
 func prepareSlice(in []interface{}) (out []string) {
 	for _, value := range in {
 		switch v := value.(type) {
