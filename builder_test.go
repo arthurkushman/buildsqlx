@@ -537,6 +537,19 @@ func TestDB_GroupByHaving(t *testing.T) {
 	db.Truncate(UsersTable)
 }
 
+func TestDB_HavingRaw(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("points").GroupBy("points").HavingRaw("points > 123").AndHavingRaw("points < 12345").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(batchUsers)-3, len(res))
+
+	db.Truncate(UsersTable)
+}
+
 func TestDB_AllJoins(t *testing.T) {
 	db.Truncate(PostsTable)
 	db.Truncate(UsersTable)

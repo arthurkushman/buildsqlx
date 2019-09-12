@@ -61,18 +61,6 @@ func NewDb(c *Connection) *DB {
 	return &DB{Builder: b, Conn: c}
 }
 
-//func HasTable(table string) bool {
-//
-//}
-//
-//func HasColumns(table string, columns []string) bool {
-//
-//}
-//
-//func GetColumnType() string {
-//
-//}
-
 // Table appends table name to sql query
 func (r *DB) Table(table string) *DB {
 	// reset before constructing again
@@ -128,8 +116,26 @@ func (r *DB) GroupBy(expr string) *DB {
 }
 
 // Having similar to Where but used with GroupBy to apply over the grouped results
-func (r *DB) Having(operand string, operator string, val interface{}) *DB {
+func (r *DB) Having(operand, operator string, val interface{}) *DB {
 	r.Builder.having = operand + " " + operator + " " + convertToStr(val)
+	return r
+}
+
+// HavingRaw accepts custom string to apply it to having clause
+func (r *DB) HavingRaw(raw string) *DB {
+	r.Builder.having = raw
+	return r
+}
+
+// OrHavingRaw accepts custom string to apply it to having clause with logical OR
+func (r *DB) OrHavingRaw(raw string) *DB {
+	r.Builder.having += " OR " + raw
+	return r
+}
+
+// AndHavingRaw accepts custom string to apply it to having clause with logical OR
+func (r *DB) AndHavingRaw(raw string) *DB {
+	r.Builder.having += " AND " + raw
 	return r
 }
 
@@ -148,17 +154,17 @@ func (r *DB) SelectRaw(raw string) *DB {
 }
 
 // InnerJoin joins tables by getting elements if found in both
-func (r *DB) InnerJoin(table string, left string, operator string, right string) *DB {
+func (r *DB) InnerJoin(table, left, operator, right string) *DB {
 	return r.buildJoin(JoinInner, table, left+operator+right)
 }
 
 // LeftJoin joins tables by getting elements from left without those that null on the right
-func (r *DB) LeftJoin(table string, left string, operator string, right string) *DB {
+func (r *DB) LeftJoin(table, left, operator, right string) *DB {
 	return r.buildJoin(JoinLeft, table, left+operator+right)
 }
 
 // RightJoin joins tables by getting elements from right without those that null on the left
-func (r *DB) RightJoin(table string, left string, operator string, right string) *DB {
+func (r *DB) RightJoin(table, left, operator, right string) *DB {
 	return r.buildJoin(JoinRight, table, left+operator+right)
 }
 
@@ -169,12 +175,12 @@ func (r *DB) RightJoin(table string, left string, operator string, right string)
 //}
 
 // FullJoin joins tables by getting all elements of both sets
-func (r *DB) FullJoin(table string, left string, operator string, right string) *DB {
+func (r *DB) FullJoin(table, left, operator, right string) *DB {
 	return r.buildJoin(JoinFull, table, left+operator+right)
 }
 
 // FullOuterJoin joins tables by getting an outer sets
-func (r *DB) FullOuterJoin(table string, left string, operator string, right string) *DB {
+func (r *DB) FullOuterJoin(table, left, operator, right string) *DB {
 	return r.buildJoin(JoinFullOuter, table, left+operator+right)
 }
 
@@ -203,7 +209,7 @@ func (r *DB) WhereNotExists(rr *DB) *DB {
 	return r
 }
 
-func (r *DB) buildJoin(joinType string, table string, on string) *DB {
+func (r *DB) buildJoin(joinType, table, on string) *DB {
 	r.Builder.join = append(r.Builder.join, " "+joinType+" JOIN "+table+" ON "+on+" ")
 	return r
 }
