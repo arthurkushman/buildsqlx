@@ -20,22 +20,23 @@ const (
 
 // inner type to build qualified sql
 type builder struct {
-	whereBindings []map[string]interface{}
-	where         string
-	table         string
-	from          string
-	join          []string
-	orderBy       map[string]string
-	orderByRaw    *string
-	groupBy       string
-	having        string
-	columns       []string
-	union         []string
-	isUnionAll    bool
-	offset        int64
-	limit         int64
-	lockForUpdate *string
-	whereExists   string
+	whereBindings   []map[string]interface{}
+	startBindingsAt int
+	where           string
+	table           string
+	from            string
+	join            []string
+	orderBy         map[string]string
+	orderByRaw      *string
+	groupBy         string
+	having          string
+	columns         []string
+	union           []string
+	isUnionAll      bool
+	offset          int64
+	limit           int64
+	lockForUpdate   *string
+	whereExists     string
 }
 
 // DB is an entity that composite builder and Conn types
@@ -98,6 +99,7 @@ func (r *DB) reset() {
 	r.Builder.lockForUpdate = nil
 	r.Builder.whereExists = ""
 	r.Builder.orderByRaw = nil
+	r.Builder.startBindingsAt = 1
 }
 
 // Select accepts columns to select from a table

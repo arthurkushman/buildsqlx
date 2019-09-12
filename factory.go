@@ -37,7 +37,7 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 		query = builder.buildSelect()
 	}
 
-	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
+	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings, true)...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,10 +80,10 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	return res, nil
 }
 
-func prepareValues(values []map[string]interface{}) []interface{} {
+func prepareValues(values []map[string]interface{}, where bool) []interface{} {
 	var vls []interface{}
 	for _, v := range values {
-		_, vals, _ := prepareBindings(v, true)
+		_, vals, _ := prepareBindings(v, where)
 		vls = append(vls, vals...)
 	}
 	return vls
@@ -105,7 +105,7 @@ func (r *builder) buildClauses() string {
 
 	// build where clause
 	if len(r.whereBindings) > 0 {
-		clauses += composeWhere(r.whereBindings)
+		clauses += composeWhere(r.whereBindings, r.startBindingsAt)
 	}
 
 	if r.groupBy != "" {
@@ -134,9 +134,9 @@ func (r *builder) buildClauses() string {
 }
 
 // composes WHERE clause string for particular query stmt
-func composeWhere(whereBindings []map[string]interface{}) string {
+func composeWhere(whereBindings []map[string]interface{}, startedAt int) string {
 	where := " WHERE "
-	i := 1
+	i := startedAt
 	for _, m := range whereBindings {
 		for k := range m {
 			// operand >= $i
@@ -208,7 +208,6 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 
 // prepareBindings prepares slices to split in favor of INSERT sql statement
 func prepareBindings(data map[string]interface{}, where bool) (columns []string, values []interface{}, bindings []string) {
-
 	i := 1
 	for column, value := range data {
 		columns = append(columns, column)
@@ -335,7 +334,6 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 	}
 
 	columns, values, bindings := prepareBindings(data, false)
-
 	setVal := ""
 	l := len(columns)
 	for k, col := range columns {
@@ -346,15 +344,13 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 	}
 
 	query := "UPDATE " + r.Builder.table + " SET " + setVal
-
 	if r.Builder.from != "" {
 		query += " FROM " + r.Builder.from
 	}
 
-	if r.Builder.where != "" {
-		query += " WHERE " + r.Builder.where
-	}
-
+	r.Builder.startBindingsAt = l + 1
+	query += r.Builder.buildClauses()
+	values = append(values, prepareValues(r.Builder.whereBindings, false)...)
 	res, err := r.Sql().Exec(query, values...)
 	if err != nil {
 		return 0, err
