@@ -368,16 +368,11 @@ func (r *DB) Delete() (int64, error) {
 	}
 
 	query := "DELETE FROM " + r.Builder.table
-
-	if r.Builder.where != "" {
-		query += " WHERE " + r.Builder.where
-	}
-
-	res, err := r.Sql().Exec(query)
+	query += r.Builder.buildClauses()
+	res, err := r.Sql().Exec(query, prepareValues(r.Builder.whereBindings, false)...)
 	if err != nil {
 		return 0, err
 	}
-
 	return res.RowsAffected()
 }
 
@@ -389,21 +384,16 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 	}
 
 	columns, values, bindings := prepareBindings(data, false)
-
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") ON CONFLICT(" + conflict + ") DO UPDATE SET "
-
 	for i, v := range columns {
 		columns[i] = v + " = excluded." + v
 	}
 
 	query += strings.Join(columns, ", ")
-
 	res, err := r.Sql().Exec(query, values...)
-
 	if err != nil {
 		return 0, err
 	}
-
 	return res.RowsAffected()
 }
 
