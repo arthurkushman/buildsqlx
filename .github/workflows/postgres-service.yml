@@ -29,15 +29,9 @@ jobs:
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
-#    steps:
-#      - uses: actions/checkout@v1
-#      - run: npm ci
-#      - run: node client.js
-#        env:
-#          # use postgres for the host here because we have specified a container for the job.
-#          # If we were running the job on the VM this would be localhost
-#          POSTGRES_HOST: postgres
-#          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
+    steps:
+      - name: Echo
+        run: echo *
 
   # Runs all steps on the VM
   # The service containers will use host port binding instead of container networking so you access them via localhost rather than the service name
@@ -57,12 +51,6 @@ jobs:
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
-#    steps:
-#      - uses: actions/checkout@v1
-#      - run: npm ci
-#      - run: node client.js
-#        env:
-#          # use localhost for the host here because we have specified a container for the job.
-#          # If we were running the job on the VM this would be postgres
-#          POSTGRES_HOST: localhost
-#          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }} # get randomly assigned published port
+    steps:
+      - name: Echo
+        run: echo *
