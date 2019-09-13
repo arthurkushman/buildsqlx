@@ -109,6 +109,12 @@ func (r *DB) OrderByRaw(exp string) *DB {
 	return r
 }
 
+// InRandomOrder add ORDER BY random() - note be cautious on big data-tables it can lead to slowing down perf
+func (r *DB) InRandomOrder() *DB {
+	r.OrderByRaw("random()")
+	return r
+}
+
 // GroupBy adds GROUP BY expression to SQL stmt
 func (r *DB) GroupBy(expr string) *DB {
 	r.Builder.groupBy = expr

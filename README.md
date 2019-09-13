@@ -49,6 +49,11 @@ func main() {
 }
 ```
 
+### InRandomOrder
+```go
+res, err = db.Table("users").Select("name", "post", "user_id").InRandomOrder().Get()
+```
+
 ## GroupBy / Having
 The GroupBy and Having methods may be used to group the query results. 
 The having method's signature is similar to that of the where method:
