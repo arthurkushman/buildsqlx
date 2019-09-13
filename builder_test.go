@@ -3,6 +3,7 @@ package buildsqlx
 import (
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -16,6 +17,25 @@ const (
 var db = NewDb(NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
 
 var dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
+
+func TestMain(m *testing.M) {
+	_, err := db.Sql().Exec("create table if not exists users (id serial primary key, name varchar(128) not null, points integer)")
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Sql().Exec("create table if not exists posts (id serial primary key, title varchar(128) not null, post text, user_id integer, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Sql().Exec("create table if not exists test (id serial primary key, foo varchar(128) not null, bar varchar(128) not null, baz integer)")
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestSelectAndLimit(t *testing.T) {
 	db.Truncate(TestTable)
