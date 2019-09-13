@@ -13,6 +13,10 @@ jobs:
         go-version: 1.12
       id: go
 
+    - uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: '11'
+
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
@@ -33,5 +37,5 @@ jobs:
     - name: Code coverage
       run: go test -coverprofile=coverage.out
 
-    - name: Push coverage
+    - name: Push coverage to codecov
       run: bash <(curl -s https://codecov.io/bash) -t 489df204-a660-49b8-8ddb-6637ae4c4216
