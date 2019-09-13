@@ -2,6 +2,7 @@
 Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-button/img/tweet.png)](https://twitter.com/intent/tweet?text=Go%20database%20query%20builder%20library%20&url=https://github.com/arthurkushman/buildsqlx&hashtags=go,golang,sql,builder,postgresql,mysql,sql-builder,developers)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/arthurkushman/buildsqlx)](https://goreportcard.com/report/github.com/arthurkushman/buildsqlx)
+[![Build and run](https://github.com/arthurkushman/buildsqlx/workflows/Build%20and%20run/badge.svg)](https://github.com/arthurkushman/buildsqlx/actions)
 [![GoDoc](https://github.com/golang/gddo/blob/c782c79e0a3c3282dacdaaebeff9e6fd99cb2919/gddo-server/assets/status.svg)](https://godoc.org/github.com/arthurkushman/buildsqlx)
 [![codecov](https://codecov.io/gh/arthurkushman/buildsqlx/branch/master/graph/badge.svg)](https://codecov.io/gh/arthurkushman/buildsqlx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
