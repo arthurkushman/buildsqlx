@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	JoinInner = "INNER"
+	joinInner = "INNER"
 	//JoinCross     = "CROSS"
-	JoinLeft      = "LEFT"
-	JoinRight     = "RIGHT"
-	JoinFull      = "FULL"
-	JoinFullOuter = "FULL OUTER"
+	joinLeft      = "LEFT"
+	joinRight     = "RIGHT"
+	joinFull      = "FULL"
+	joinFullOuter = "FULL OUTER"
 )
 
 // inner type to build qualified sql
@@ -51,6 +51,7 @@ func newBuilder() *builder {
 	}
 }
 
+// Sql returns DB struct
 func (r *DB) Sql() *sql.DB {
 	return r.Conn.db
 }
@@ -161,17 +162,17 @@ func (r *DB) SelectRaw(raw string) *DB {
 
 // InnerJoin joins tables by getting elements if found in both
 func (r *DB) InnerJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(JoinInner, table, left+operator+right)
+	return r.buildJoin(joinInner, table, left+operator+right)
 }
 
 // LeftJoin joins tables by getting elements from left without those that null on the right
 func (r *DB) LeftJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(JoinLeft, table, left+operator+right)
+	return r.buildJoin(joinLeft, table, left+operator+right)
 }
 
 // RightJoin joins tables by getting elements from right without those that null on the left
 func (r *DB) RightJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(JoinRight, table, left+operator+right)
+	return r.buildJoin(joinRight, table, left+operator+right)
 }
 
 // CrossJoin joins tables by getting intersection of sets
@@ -182,12 +183,12 @@ func (r *DB) RightJoin(table, left, operator, right string) *DB {
 
 // FullJoin joins tables by getting all elements of both sets
 func (r *DB) FullJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(JoinFull, table, left+operator+right)
+	return r.buildJoin(joinFull, table, left+operator+right)
 }
 
 // FullOuterJoin joins tables by getting an outer sets
 func (r *DB) FullOuterJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(JoinFullOuter, table, left+operator+right)
+	return r.buildJoin(joinFullOuter, table, left+operator+right)
 }
 
 // Union joins multiple queries omitting duplicate records

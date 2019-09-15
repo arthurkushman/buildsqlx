@@ -9,17 +9,17 @@ import (
 )
 
 const (
-	PlusSign  = "+"
-	MinusSign = "-"
+	plusSign  = "+"
+	minusSign = "-"
 	// Errors
-	ErrTableCallBeforeOp = "sql: there was no Table() call with table name set"
+	errTableCallBeforeOp = "sql: there was no Table() call with table name set"
 )
 
 // Get builds all sql statements chained before and executes query collecting data to the slice
 func (r *DB) Get() ([]map[string]interface{}, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return nil, fmt.Errorf(ErrTableCallBeforeOp)
+		return nil, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	query := ""
@@ -171,7 +171,7 @@ func composeOrderBy(orderBy []map[string]string, orderByRaw *string) string {
 func (r *DB) Insert(data map[string]interface{}) error {
 	builder := r.Builder
 	if builder.table == "" {
-		return fmt.Errorf(ErrTableCallBeforeOp)
+		return fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	columns, values, bindings := prepareBindings(data, false)
@@ -191,7 +191,7 @@ func (r *DB) Insert(data map[string]interface{}) error {
 func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	columns, values, bindings := prepareBindings(data, false)
@@ -247,7 +247,7 @@ func prepareBindings(data map[string]interface{}, where bool) (columns []string,
 func (r *DB) InsertBatch(data []map[string]interface{}) error {
 	builder := r.Builder
 	if builder.table == "" {
-		return fmt.Errorf(ErrTableCallBeforeOp)
+		return fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	txn, err := r.Sql().Begin()
@@ -332,7 +332,7 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 func (r *DB) Update(data map[string]interface{}) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	columns, values, bindings := prepareBindings(data, false)
@@ -366,7 +366,7 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 func (r *DB) Delete() (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	query := "DELETE FROM " + r.Builder.table
@@ -382,7 +382,7 @@ func (r *DB) Delete() (int64, error) {
 func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	columns, values, bindings := prepareBindings(data, false)

@@ -66,7 +66,7 @@ func (r *DB) PluckMap(colKey, colValue string) (val []map[interface{}]interface{
 func (r *DB) Exists() (exists bool, err error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return false, fmt.Errorf(ErrTableCallBeforeOp)
+		return false, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	query := "SELECT EXISTS(SELECT 1 FROM " + builder.table + builder.buildClauses() + ")"
@@ -85,19 +85,19 @@ func (r *DB) DoesntExists() (bool, error) {
 
 // Increment column on passed value
 func (r *DB) Increment(column string, on uint64) (int64, error) {
-	return r.incrDecr(column, PlusSign, on)
+	return r.incrDecr(column, plusSign, on)
 }
 
 // Decrement column on passed value
 func (r *DB) Decrement(column string, on uint64) (int64, error) {
-	return r.incrDecr(column, MinusSign, on)
+	return r.incrDecr(column, minusSign, on)
 }
 
 // increments or decrements depending on sign
 func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf(ErrTableCallBeforeOp)
+		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
 	query := "UPDATE " + r.Builder.table + " SET " + column + " = " + column + sign + strconv.FormatUint(on, 10)
