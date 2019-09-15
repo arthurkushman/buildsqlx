@@ -27,6 +27,7 @@ Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-b
 * [WhereExists / WhereNotExists](#user-content-whereexists--wherenotexists)
 * [Determining If Records Exist](#user-content-determining-if-records-exist)
 * [Aggregates](#user-content-aggregates)
+* [Create table](#user-content-create-table)
 
 ## Selects, Ordering, Limit & Offset
 
@@ -283,4 +284,20 @@ mx, err := db.Table(UsersTable).Max("points")
 mn, err := db.Table(UsersTable).Min("points")
 
 sum, err := db.Table(UsersTable).Sum("points")
+```
+
+## Create table
+To create a new database table, use the CreateTable method. 
+The CreateTable method accepts two arguments. 
+The first is the name of the table, while the second is an anonymous function/closure which receives a Table struct that may be used to define the new table:
+```go
+	res, err := db.CreateTable("big_tbl", func(table *Table) {
+		table.Increments("id")
+		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
+		table.SmallInt("cnt").Default(1)
+		table.Integer("points").NotNull()
+		table.BigInt("likes").Index("idx_likes")
+		table.Text("comment")
+		table.DblPrecision("likes_to_points").Default(0.0)
+	})
 ```

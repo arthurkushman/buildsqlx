@@ -10,10 +10,10 @@ const TableToCreate = "big_tbl"
 func TestDB_CreateTable(t *testing.T) {
 	res, err := db.CreateTable(TableToCreate, func(table *Table) {
 		table.Increments("id")
-		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog")
+		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
 		table.SmallInt("cnt").Default(1)
 		table.Integer("points").NotNull()
-		table.BigInt("likes")
+		table.BigInt("likes").Index("idx_likes")
 		table.Text("comment")
 		table.DblPrecision("likes_to_points").Default(0.0)
 	})

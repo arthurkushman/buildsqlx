@@ -23,28 +23,42 @@ type Table struct {
 	columns []*column
 }
 
+// collection of properties for the column
 type column struct {
 	Name         string
 	IsNotNull    bool
 	IsPrimaryKey bool
 	ColumnType   colType
 	Default      *string
+	IsIndex      bool
+	IsUnique     bool
+	IdxName      string
 }
 
-func (r *DB) CreateTable(tblName string, fn func(table *Table)) (sql.Result, error) {
+func (r *DB) CreateTable(tblName string, fn func(table *Table)) (res sql.Result, err error) {
 	tbl := Table{}
 	fn(&tbl) // run fn with Table struct passed to collect columns to []*column slice
 
 	l := len(tbl.columns)
+	var indices []string
 	query := "CREATE TABLE " + tblName + "("
 	for k, col := range tbl.columns {
 		query += composeColumn(col)
 		if k < l-1 {
 			query += ","
 		}
+		indices = append(indices, composeIndex(tblName, col))
 	}
 	query += ")"
-	return r.Sql().Exec(query)
+
+	res, err = r.Sql().Exec(query)
+	for _, idx := range indices {
+		_, err = r.Sql().Exec(idx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return
 }
 
 // builds column definition
@@ -62,6 +76,18 @@ func composeColumn(col *column) string {
 		colSchema += " DEFAULT " + *col.Default
 	}
 	return colSchema
+}
+
+// build index for table on particular column depending on an index type
+func composeIndex(tblName string, col *column) string {
+	if col.IsIndex {
+		return "CREATE INDEX " + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+	}
+
+	if col.IsUnique {
+		return "CREATE UNIQUE INDEX " + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+	}
+	return ""
 }
 
 // Increments creates auto incremented primary key integer column
@@ -128,5 +154,17 @@ func (t *Table) NotNull() *Table {
 func (t *Table) Default(val interface{}) *Table {
 	v := convertToStr(val)
 	t.columns[len(t.columns)-1].Default = &v
+	return t
+}
+
+// Index sets the last column to btree index
+func (t *Table) Index(idxName string) *Table {
+	t.columns[len(t.columns)-1].IsIndex = true
+	return t
+}
+
+// Unique sets the last column to unique index
+func (t *Table) Unique(idxName string) *Table {
+	t.columns[len(t.columns)-1].IsUnique = true
 	return t
 }
