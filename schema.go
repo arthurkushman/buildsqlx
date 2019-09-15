@@ -13,6 +13,14 @@ const (
 	TypeBigInt       = "BIGINT"
 	TypeText         = "TEXT"
 	TypeVarchar      = "VARCHAR"
+	TypeChar         = "CHAR"
+	TypeDate         = "DATE"
+	TypeTime         = "TIME"
+	TypeDateTime     = "TIMESTAMP"
+	TypeDateTimeTz   = "TIMESTAMPTZ"
+	CurrentDate      = "CURRENT_DATE"
+	CurrentTime      = "CURRENT_TIME"
+	CurrentDateTime  = "NOW()"
 	TypeDblPrecision = "DOUBLE PRECISION"
 	TypeNumeric      = "NUMERIC"
 )
@@ -132,6 +140,12 @@ func (t *Table) String(colNm string, len uint64) *Table {
 	return t
 }
 
+// Char creates char(len) column
+func (t *Table) Char(colNm string, len uint64) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: colType(TypeChar + "(" + strconv.FormatUint(len, 10) + ")")})
+	return t
+}
+
 // Text	creates text column
 func (t *Table) Text(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeText})
@@ -180,4 +194,37 @@ func (t *Table) ForeignKey(idxName, rfcTbl, onCol string) *Table {
 	key := "ALTER TABLE " + t.tblName + " ADD CONSTRAINT " + idxName + " FOREIGN KEY (" + t.columns[len(t.columns)-1].Name + ") REFERENCES " + rfcTbl + " (" + onCol + ")"
 	t.columns[len(t.columns)-1].ForeignKey = &key
 	return t
+}
+
+// Date	creates date column with an ability to set current_date as default value
+func (t *Table) Date(colNm string, isDefault bool) *Table {
+	t.columns = append(t.columns, buildDateTIme(colNm, TypeDate, CurrentDate, isDefault))
+	return t
+}
+
+// Time creates time column with an ability to set current_time as default value
+func (t *Table) Time(colNm string, isDefault bool) *Table {
+	t.columns = append(t.columns, buildDateTIme(colNm, TypeTime, CurrentTime, isDefault))
+	return t
+}
+
+// DateTime creates datetime column with an ability to set NOW() as default value
+func (t *Table) DateTime(colNm string, isDefault bool) *Table {
+	t.columns = append(t.columns, buildDateTIme(colNm, TypeDateTime, CurrentDateTime, isDefault))
+	return t
+}
+
+// DateTimeTz creates datetime column with an ability to set NOW() as default value + time zone support
+func (t *Table) DateTimeTz(colNm string, isDefault bool) *Table {
+	t.columns = append(t.columns, buildDateTIme(colNm, TypeDateTimeTz, CurrentDateTime, isDefault))
+	return t
+}
+
+// build any date/time type with defaults preset
+func buildDateTIme(colNm, t, defType string, isDefault bool) *column {
+	col := &column{Name: colNm, ColumnType: colType(t)}
+	if isDefault {
+		col.Default = &defType
+	}
+	return col
 }

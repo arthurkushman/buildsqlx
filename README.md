@@ -299,6 +299,9 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.BigInt("likes").Index("idx_likes")
 		table.Text("comment")
 		table.DblPrecision("likes_to_points").Default(0.0)
+		table.Char("tag", 10)
+		table.DateTime("created_at", true)
+		table.DateTimeTz("updated_at", true)		
 	})
 	
 	// to make a foreign key constraint from another table

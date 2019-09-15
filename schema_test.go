@@ -54,3 +54,21 @@ func TestTable_BigIncrements(t *testing.T) {
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)
 }
+
+func TestTable_DateTime(t *testing.T) {
+	_, err := db.CreateTable(TableToCreate, func(table *Table) {
+		table.Increments("id")
+		table.Char("tag", 10)
+		table.Date("birthday", false)
+		table.DateTime("created_at", true)
+		table.DateTimeTz("updated_at", true)
+	})
+	assert.NoError(t, err)
+
+	is, err := db.HasTable("public", TableToCreate)
+	assert.NoError(t, err)
+	assert.True(t, is)
+
+	_, err = db.Drop(TableToCreate)
+	assert.NoError(t, err)
+}
