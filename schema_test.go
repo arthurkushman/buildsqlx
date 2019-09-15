@@ -8,7 +8,7 @@ import (
 const TableToCreate = "big_tbl"
 
 func TestDB_CreateTable(t *testing.T) {
-	res, err := db.CreateTable(TableToCreate, func(table *Table) {
+	_, err := db.CreateTable(TableToCreate, func(table *Table) {
 		table.Increments("id")
 		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
 		table.SmallInt("cnt").Default(1)
@@ -19,13 +19,20 @@ func TestDB_CreateTable(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	_, err = res.RowsAffected()
-	assert.NoError(t, err)
-
 	is, err := db.HasTable("public", TableToCreate)
 	assert.NoError(t, err)
 	assert.True(t, is)
 
+	_, err = db.CreateTable("tbl_to_ref", func(table *Table) {
+		table.Increments("id")
+		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", TableToCreate, "id")
+	})
+	assert.NoError(t, err)
+
+	// 1st drop the referencing tbl
+	_, err = db.Drop("tbl_to_ref")
+	assert.NoError(t, err)
+	// then referenced
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)
 }

@@ -21,6 +21,7 @@ type colType string
 
 type Table struct {
 	columns []*column
+	tblName string
 }
 
 // collection of properties for the column
@@ -32,11 +33,12 @@ type column struct {
 	Default      *string
 	IsIndex      bool
 	IsUnique     bool
+	ForeignKey   *string
 	IdxName      string
 }
 
 func (r *DB) CreateTable(tblName string, fn func(table *Table)) (res sql.Result, err error) {
-	tbl := Table{}
+	tbl := Table{tblName: tblName}
 	fn(&tbl) // run fn with Table struct passed to collect columns to []*column slice
 
 	l := len(tbl.columns)
@@ -86,6 +88,10 @@ func composeIndex(tblName string, col *column) string {
 
 	if col.IsUnique {
 		return "CREATE UNIQUE INDEX " + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+	}
+
+	if col.ForeignKey != nil {
+		return *col.ForeignKey
 	}
 	return ""
 }
@@ -166,5 +172,12 @@ func (t *Table) Index(idxName string) *Table {
 // Unique sets the last column to unique index
 func (t *Table) Unique(idxName string) *Table {
 	t.columns[len(t.columns)-1].IsUnique = true
+	return t
+}
+
+// ForeignKey sets the last column to reference rfcTbl on onCol with idxName foreign key index
+func (t *Table) ForeignKey(idxName, rfcTbl, onCol string) *Table {
+	key := "ALTER TABLE " + t.tblName + " ADD CONSTRAINT " + idxName + " FOREIGN KEY (" + t.columns[len(t.columns)-1].Name + ") REFERENCES " + rfcTbl + " (" + onCol + ")"
+	t.columns[len(t.columns)-1].ForeignKey = &key
 	return t
 }

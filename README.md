@@ -300,4 +300,10 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.Text("comment")
 		table.DblPrecision("likes_to_points").Default(0.0)
 	})
+	
+	// to make a foreign key constraint from another table
+	_, err = db.CreateTable("tbl_to_ref", func(table *Table) {
+		table.Increments("id")
+		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id")
+	})	
 ```
