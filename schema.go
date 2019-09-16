@@ -23,6 +23,8 @@ const (
 	CurrentDateTime  = "NOW()"
 	TypeDblPrecision = "DOUBLE PRECISION"
 	TypeNumeric      = "NUMERIC"
+	TypeTsVector     = "tsvector"
+	TypeTsQuery      = "tsquery"
 )
 
 type colType string
@@ -206,10 +208,15 @@ func (t *Table) DblPrecision(colNm string) *Table {
 	return t
 }
 
-// Numeric	creates exact, user-specified precision number
+// Numeric creates exact, user-specified precision number
 func (t *Table) Numeric(colNm string, precision, scale uint64) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: colType(TypeNumeric + "(" + strconv.FormatUint(precision, 10) + ", " + strconv.FormatUint(scale, 10) + ")")})
 	return t
+}
+
+// Decimal alias for Numeric as for PostgreSQL they are the same
+func (t *Table) Decimal(colNm string, precision, scale uint64) *Table {
+	return t.Numeric(colNm, precision, scale)
 }
 
 // NotNull sets the last column to not null
@@ -276,6 +283,18 @@ func (t *Table) DateTime(colNm string, isDefault bool) *Table {
 // DateTimeTz creates datetime column with an ability to set NOW() as default value + time zone support
 func (t *Table) DateTimeTz(colNm string, isDefault bool) *Table {
 	t.columns = append(t.columns, buildDateTIme(colNm, TypeDateTimeTz, CurrentDateTime, isDefault))
+	return t
+}
+
+// TsVector creates tsvector typed column
+func (t *Table) TsVector(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeTsVector})
+	return t
+}
+
+// TsVector creates tsvector typed column
+func (t *Table) TsQuery(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeTsQuery})
 	return t
 }
 

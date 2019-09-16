@@ -16,6 +16,9 @@ func TestDB_CreateTable(t *testing.T) {
 		table.BigInt("likes").Index("idx_likes")
 		table.Text("comment").Comment("user comment")
 		table.DblPrecision("likes_to_points").Default(0.0)
+		table.Decimal("tax", 2, 2)
+		table.TsVector("body")
+		table.TsQuery("body_query")
 		table.TableComment("big table for big data")
 	})
 	assert.NoError(t, err)
@@ -70,6 +73,6 @@ func TestTable_DateTime(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
-	_, err = db.Drop(TableToCreate)
+	_, err = db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
 }

@@ -302,7 +302,10 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.Char("tag", 10)
 		table.DateTime("created_at", true)
 		table.DateTimeTz("updated_at", true)		
-		table.TableComment("big table for big data")
+		table.Decimal("tax", 2, 2)
+		table.TsVector("body")
+		table.TsQuery("body_query")		
+		table.TableComment("big table for big data")		
 	})
 	
 	// to make a foreign key constraint from another table
