@@ -563,7 +563,7 @@ func TestDB_HavingRaw(t *testing.T) {
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("points").GroupBy("points").HavingRaw("points > 123").AndHavingRaw("points < 12345").Get()
+	res, err := db.Table(UsersTable).Select("points").GroupBy("points").HavingRaw("points > 123").AndHavingRaw("points < 12345").OrHavingRaw("points = 0").Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(batchUsers)-3, len(res))
 
@@ -622,4 +622,21 @@ func TestDB_OrderByRaw(t *testing.T) {
 	assert.Equal(t, batchPosts[2]["title"], res["title"])
 
 	db.Truncate(PostsTable)
+}
+
+func TestDB_SelectRaw(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).SelectRaw("SUM(points) as pts").First()
+	assert.NoError(t, err)
+
+	var sum int64
+	for _, v := range batchUsers {
+		sum += v["points"].(int64)
+	}
+	assert.Equal(t, sum, res["pts"])
+	db.Truncate(UsersTable)
 }

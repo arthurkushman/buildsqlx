@@ -156,7 +156,7 @@ func (r *DB) AddSelect(args ...string) *DB {
 
 // SelectRow accepts custom string to select from a table
 func (r *DB) SelectRaw(raw string) *DB {
-	r.Builder.columns = append(r.Builder.columns, raw)
+	r.Builder.columns = []string{raw}
 	return r
 }
 
