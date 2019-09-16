@@ -30,6 +30,7 @@ type colType string
 type Table struct {
 	columns []*column
 	tblName string
+	comment *string
 }
 
 // collection of properties for the column
@@ -43,14 +44,17 @@ type column struct {
 	IsUnique     bool
 	ForeignKey   *string
 	IdxName      string
+	Comment      *string
 }
 
+// CreateTable creates table with an appropriate types/indices/comments/defaults
 func (r *DB) CreateTable(tblName string, fn func(table *Table)) (res sql.Result, err error) {
-	tbl := Table{tblName: tblName}
-	fn(&tbl) // run fn with Table struct passed to collect columns to []*column slice
+	tbl := &Table{tblName: tblName}
+	fn(tbl) // run fn with Table struct passed to collect columns to []*column slice
 
 	l := len(tbl.columns)
 	var indices []string
+	var comments []string
 	query := "CREATE TABLE " + tblName + "("
 	for k, col := range tbl.columns {
 		query += composeColumn(col)
@@ -58,14 +62,44 @@ func (r *DB) CreateTable(tblName string, fn func(table *Table)) (res sql.Result,
 			query += ","
 		}
 		indices = append(indices, composeIndex(tblName, col))
+		comments = append(comments, composeComment(tblName, col))
 	}
 	query += ")"
 
+	comments = append(comments, composeTableComment(tblName, tbl))
 	res, err = r.Sql().Exec(query)
+	// create indices
+	_, err = r.createIndices(indices)
+	if err != nil {
+		return nil, err
+	}
+	// create comments
+	_, err = r.createComments(comments)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func (r *DB) createIndices(indices []string) (res sql.Result, err error) {
 	for _, idx := range indices {
-		_, err = r.Sql().Exec(idx)
-		if err != nil {
-			return nil, err
+		if idx != "" {
+			res, err = r.Sql().Exec(idx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return
+}
+
+func (r *DB) createComments(comments []string) (res sql.Result, err error) {
+	for _, comment := range comments {
+		if comment != "" {
+			res, err = r.Sql().Exec(comment)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return
@@ -100,6 +134,20 @@ func composeIndex(tblName string, col *column) string {
 
 	if col.ForeignKey != nil {
 		return *col.ForeignKey
+	}
+	return ""
+}
+
+func composeComment(tblName string, col *column) string {
+	if col.Comment != nil {
+		return "COMMENT ON COLUMN " + tblName + "." + col.Name + " IS '" + *col.Comment + "'"
+	}
+	return ""
+}
+
+func composeTableComment(tblName string, tbl *Table) string {
+	if tbl.comment != nil {
+		return "COMMENT ON TABLE " + tblName + " IS '" + *tbl.comment + "'"
 	}
 	return ""
 }
@@ -175,6 +223,17 @@ func (t *Table) Default(val interface{}) *Table {
 	v := convertToStr(val)
 	t.columns[len(t.columns)-1].Default = &v
 	return t
+}
+
+// Comment sets the column comment
+func (t *Table) Comment(cmt string) *Table {
+	t.columns[len(t.columns)-1].Comment = &cmt
+	return t
+}
+
+// TableComment sets the comment for table
+func (t *Table) TableComment(cmt string) {
+	t.comment = &cmt
 }
 
 // Index sets the last column to btree index

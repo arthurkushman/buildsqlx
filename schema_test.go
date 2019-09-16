@@ -14,8 +14,9 @@ func TestDB_CreateTable(t *testing.T) {
 		table.SmallInt("cnt").Default(1)
 		table.Integer("points").NotNull()
 		table.BigInt("likes").Index("idx_likes")
-		table.Text("comment")
+		table.Text("comment").Comment("user comment")
 		table.DblPrecision("likes_to_points").Default(0.0)
+		table.TableComment("big table for big data")
 	})
 	assert.NoError(t, err)
 
