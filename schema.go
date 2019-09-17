@@ -25,6 +25,8 @@ const (
 	TypeNumeric      = "NUMERIC"
 	TypeTsVector     = "tsvector"
 	TypeTsQuery      = "tsquery"
+	TypeJson         = "json"
+	TypeJsonb        = "jsonb"
 )
 
 type colType string
@@ -295,6 +297,18 @@ func (t *Table) TsVector(colNm string) *Table {
 // TsVector creates tsvector typed column
 func (t *Table) TsQuery(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeTsQuery})
+	return t
+}
+
+// Json creates json text typed column
+func (t *Table) Json(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeJson})
+	return t
+}
+
+// Jsonb creates jsonb typed column
+func (t *Table) Jsonb(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeJsonb})
 	return t
 }
 

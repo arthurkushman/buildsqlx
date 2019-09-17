@@ -45,6 +45,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	res, err := db.CreateTable(TableToCreate, func(table *Table) {
 		table.BigIncrements("id")
 		table.Numeric("price", 4, 3)
+		table.Jsonb("taxes")
 	})
 	assert.NoError(t, err)
 
@@ -62,6 +63,7 @@ func TestTable_BigIncrements(t *testing.T) {
 func TestTable_DateTime(t *testing.T) {
 	_, err := db.CreateTable(TableToCreate, func(table *Table) {
 		table.Increments("id")
+		table.Json("settings")
 		table.Char("tag", 10)
 		table.Date("birthday", false)
 		table.DateTime("created_at", true)
