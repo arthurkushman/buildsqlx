@@ -68,7 +68,7 @@ func (r *DB) CreateTable(tblName string, fn func(table *Table)) (res sql.Result,
 	}
 	query += ")"
 
-	comments = append(comments, composeTableComment(tblName, tbl))
+	comments = append(comments, tbl.composeTableComment())
 	res, err = r.Sql().Exec(query)
 	// create indices
 	_, err = r.createIndices(indices)
@@ -147,9 +147,9 @@ func composeComment(tblName string, col *column) string {
 	return ""
 }
 
-func composeTableComment(tblName string, tbl *Table) string {
-	if tbl.comment != nil {
-		return "COMMENT ON TABLE " + tblName + " IS '" + *tbl.comment + "'"
+func (t *Table) composeTableComment() string {
+	if t.comment != nil {
+		return "COMMENT ON TABLE " + t.tblName + " IS '" + *t.comment + "'"
 	}
 	return ""
 }
