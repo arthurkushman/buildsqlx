@@ -23,10 +23,10 @@ const (
 	CurrentDateTime  = "NOW()"
 	TypeDblPrecision = "DOUBLE PRECISION"
 	TypeNumeric      = "NUMERIC"
-	TypeTsVector     = "tsvector"
-	TypeTsQuery      = "tsquery"
-	TypeJson         = "json"
-	TypeJsonb        = "jsonb"
+	TypeTsVector     = "TSVECTOR"
+	TypeTsQuery      = "TSQUERY"
+	TypeJson         = "JSON"
+	TypeJsonb        = "JSONB"
 )
 
 type colType string
