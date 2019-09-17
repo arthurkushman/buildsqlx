@@ -27,6 +27,8 @@ const (
 	TypeTsQuery      = "TSQUERY"
 	TypeJson         = "JSON"
 	TypeJsonb        = "JSONB"
+	TypePoint        = "POINT"
+	TypePolygon      = "POLYGON"
 )
 
 type colType string
@@ -309,6 +311,18 @@ func (t *Table) Json(colNm string) *Table {
 // Jsonb creates jsonb typed column
 func (t *Table) Jsonb(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeJsonb})
+	return t
+}
+
+// Point creates point geometry typed column
+func (t *Table) Point(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypePoint})
+	return t
+}
+
+// Polygon creates point geometry typed column
+func (t *Table) Polygon(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypePolygon})
 	return t
 }
 

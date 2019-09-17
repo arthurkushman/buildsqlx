@@ -306,6 +306,8 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.TsVector("body")
 		table.TsQuery("body_query")		
 		table.Jsonb("settings")
+		table.Point("pt")
+		table.Polygon("poly")		
 		table.TableComment("big table for big data")		
 	})
 	

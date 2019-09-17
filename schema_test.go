@@ -8,7 +8,10 @@ import (
 const TableToCreate = "big_tbl"
 
 func TestDB_CreateTable(t *testing.T) {
-	_, err := db.CreateTable(TableToCreate, func(table *Table) {
+	_, err := db.DropIfExists(TableToCreate)
+	assert.NoError(t, err)
+
+	_, err = db.CreateTable(TableToCreate, func(table *Table) {
 		table.Increments("id")
 		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
 		table.SmallInt("cnt").Default(1)
@@ -19,6 +22,8 @@ func TestDB_CreateTable(t *testing.T) {
 		table.Decimal("tax", 2, 2)
 		table.TsVector("body")
 		table.TsQuery("body_query")
+		table.Point("pt")
+		table.Polygon("poly")
 		table.TableComment("big table for big data")
 	})
 	assert.NoError(t, err)
