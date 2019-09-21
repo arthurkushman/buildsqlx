@@ -247,6 +247,42 @@ func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
 	return r
 }
 
+// WhereBetween sets the clause BETWEEN 2 values
+func (r *DB) WhereBetween(col string, val1, val2 interface{}) *DB {
+	r.Builder.where = " WHERE " + col + " BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	return r
+}
+
+// OrWhereBetween sets the clause OR BETWEEN 2 values
+func (r *DB) OrWhereBetween(col string, val1, val2 interface{}) *DB {
+	r.Builder.where += " OR " + col + " BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	return r
+}
+
+// AndWhereBetween sets the clause AND BETWEEN 2 values
+func (r *DB) AndWhereBetween(col string, val1, val2 interface{}) *DB {
+	r.Builder.where += " AND " + col + " BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	return r
+}
+
+// WhereBetween sets the clause BETWEEN 2 values
+func (r *DB) WhereNotBetween(col string, val1, val2 interface{}) *DB {
+	r.Builder.where = " WHERE " + col + " NOT BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	return r
+}
+
+// OrWhereBetween sets the clause OR BETWEEN 2 values
+func (r *DB) OrWhereNotBetween(col string, val1, val2 interface{}) *DB {
+	r.Builder.where += " OR " + col + " NOT BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	return r
+}
+
+// AndWhereBetween sets the clause AND BETWEEN 2 values
+func (r *DB) AndWhereNotBetween(col string, val1, val2 interface{}) *DB {
+	r.Builder.where += " AND " + col + " NOT BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	return r
+}
+
 func convertToStr(val interface{}) string {
 	switch v := val.(type) {
 	case string:

@@ -640,3 +640,22 @@ func TestDB_SelectRaw(t *testing.T) {
 	assert.Equal(t, sum, res["pts"])
 	db.Truncate(UsersTable)
 }
+
+func TestDB_AndWhereBetween(t *testing.T) {
+	db.Truncate(UsersTable)
+
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).OrWhereBetween("points", 123456, 67891023).AndWhereNotBetween("points", 12, 23).First()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "Darth Vader", res["name"])
+
+	res, err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 12, 123).AndWhereBetween("points", 1233, 12345).OrWhereNotBetween("points", 12, 23).First()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "Alex Shmidt", res["name"])
+
+	db.Truncate(UsersTable)
+}

@@ -106,6 +106,8 @@ func (r *builder) buildClauses() string {
 	// build where clause
 	if len(r.whereBindings) > 0 {
 		clauses += composeWhere(r.whereBindings, r.startBindingsAt)
+	} else { // std without bindings todo: change all to bindings
+		clauses += r.where
 	}
 
 	if r.groupBy != "" {

@@ -263,6 +263,17 @@ res, er := db.Table("users").Select("name").WhereExists(
 ```
 Any query that is of need to build one can place inside `WhereExists` clause/func.
 
+## WhereBetween / WhereNotBetween
+The whereBetween func verifies that a column's value is between two values:
+```go
+res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).Get()
+```
+
+The whereNotBetween func verifies that a column's value lies outside of two values:
+```go
+res, err := db.Table(UsersTable).Select("name").WhereNotBetween("points", 123, 123456).Get()
+```
+
 ## Determining If Records Exist
 Instead of using the count method to determine if any records exist that match your query's constraints, 
 you may use the exists and doesntExist methods:
