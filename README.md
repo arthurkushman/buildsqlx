@@ -302,7 +302,7 @@ To create a new database table, use the CreateTable method.
 The CreateTable method accepts two arguments. 
 The first is the name of the table, while the second is an anonymous function/closure which receives a Table struct that may be used to define the new table:
 ```go
-	res, err := db.CreateTable("big_tbl", func(table *Table) {
+	res, err := db.Schema("big_tbl", func(table *Table) {
 		table.Increments("id")
 		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
 		table.SmallInt("cnt").Default(1)
@@ -323,7 +323,7 @@ The first is the name of the table, while the second is an anonymous function/cl
 	})
 	
 	// to make a foreign key constraint from another table
-	_, err = db.CreateTable("tbl_to_ref", func(table *Table) {
+	_, err = db.Schema("tbl_to_ref", func(table *Table) {
 		table.Increments("id")
 		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id")
 	})	
