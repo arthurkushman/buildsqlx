@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// column types
 const (
 	TypeSerial       = "SERIAL"
 	TypeBigSerial    = "BIGSERIAL"
@@ -31,6 +32,16 @@ const (
 	TypePolygon      = "POLYGON"
 )
 
+// specific for PostgreSQL driver
+const (
+	StandardSchema = "public"
+	SemiColon      = ";"
+	AlterTable     = "ALTER TABLE "
+	Add            = " ADD "
+	Modify         = " MODIFY "
+	Drop           = " DROP "
+)
+
 type colType string
 
 type Table struct {
@@ -51,38 +62,27 @@ type column struct {
 	ForeignKey   *string
 	IdxName      string
 	Comment      *string
+	IsDrop       bool
+	IsModify     bool
 }
 
-// CreateTable creates table with an appropriate types/indices/comments/defaults
-func (r *DB) CreateTable(tblName string, fn func(table *Table)) (res sql.Result, err error) {
+// Schema creates and/or manipulates table structure with an appropriate types/indices/comments/defaults/nulls etc
+func (r *DB) Schema(tblName string, fn func(table *Table)) (res sql.Result, err error) {
 	tbl := &Table{tblName: tblName}
 	fn(tbl) // run fn with Table struct passed to collect columns to []*column slice
 
 	l := len(tbl.columns)
-	var indices []string
-	var comments []string
-	query := "CREATE TABLE " + tblName + "("
-	for k, col := range tbl.columns {
-		query += composeColumn(col)
-		if k < l-1 {
-			query += ","
+	if l > 0 {
+		tblExists, err := r.HasTable(StandardSchema, tblName)
+		if err != nil {
+			return nil, err
 		}
-		indices = append(indices, composeIndex(tblName, col))
-		comments = append(comments, composeComment(tblName, col))
-	}
-	query += ")"
 
-	comments = append(comments, tbl.composeTableComment())
-	res, err = r.Sql().Exec(query)
-	// create indices
-	_, err = r.createIndices(indices)
-	if err != nil {
-		return nil, err
-	}
-	// create comments
-	_, err = r.createComments(comments)
-	if err != nil {
-		return nil, err
+		if tblExists { // modify tbl by adding/modifying/deleting columns/indices
+			return r.modifyTable(tbl)
+		} else { // create table with relative columns/indices
+			return r.createTable(tbl)
+		}
 	}
 	return
 }
@@ -113,7 +113,29 @@ func (r *DB) createComments(comments []string) (res sql.Result, err error) {
 
 // builds column definition
 func composeColumn(col *column) string {
-	colSchema := col.Name + " " + string(col.ColumnType)
+	return col.Name + " " + string(col.ColumnType) + buildColumnOptions(col)
+}
+
+// builds column definition
+func composeAddColumn(tblName string, col *column) string {
+	return columnDef(tblName, col, Add)
+}
+
+// builds column definition
+func composeModifyColumn(tblName string, col *column) string {
+	return columnDef(tblName, col, Modify)
+}
+
+// builds column definition
+func composeDropColumn(tblName string, col *column) string {
+	return columnDef(tblName, col, Drop)
+}
+
+func columnDef(tblName string, col *column, op string) string {
+	return AlterTable + tblName + op + "COLUMN " + col.Name + " " + string(col.ColumnType) + buildColumnOptions(col)
+}
+
+func buildColumnOptions(col *column) (colSchema string) {
 	if col.IsPrimaryKey {
 		colSchema += " PRIMARY KEY"
 	}
@@ -125,7 +147,7 @@ func composeColumn(col *column) string {
 	if col.Default != nil {
 		colSchema += " DEFAULT " + *col.Default
 	}
-	return colSchema
+	return
 }
 
 // build index for table on particular column depending on an index type
@@ -261,7 +283,7 @@ func (t *Table) Unique(idxName string) *Table {
 
 // ForeignKey sets the last column to reference rfcTbl on onCol with idxName foreign key index
 func (t *Table) ForeignKey(idxName, rfcTbl, onCol string) *Table {
-	key := "ALTER TABLE " + t.tblName + " ADD CONSTRAINT " + idxName + " FOREIGN KEY (" + t.columns[len(t.columns)-1].Name + ") REFERENCES " + rfcTbl + " (" + onCol + ")"
+	key := AlterTable + t.tblName + " ADD CONSTRAINT " + idxName + " FOREIGN KEY (" + t.columns[len(t.columns)-1].Name + ") REFERENCES " + rfcTbl + " (" + onCol + ")"
 	t.columns[len(t.columns)-1].ForeignKey = &key
 	return t
 }
@@ -333,4 +355,78 @@ func buildDateTIme(colNm, t, defType string, isDefault bool) *column {
 		col.Default = &defType
 	}
 	return col
+}
+
+// DropColumn the column named colNm in this table context
+func (t *Table) DropColumn(colNm string) {
+	t.columns = append(t.columns, &column{Name: colNm, IsDrop: true})
+}
+
+// createTable create table with relative columns/indices
+func (r *DB) createTable(t *Table) (res sql.Result, err error) {
+	l := len(t.columns)
+	var indices []string
+	var comments []string
+
+	query := "CREATE TABLE " + t.tblName + "("
+	for k, col := range t.columns {
+		query += composeColumn(col)
+		if k < l-1 {
+			query += ","
+		}
+		indices = append(indices, composeIndex(t.tblName, col))
+		comments = append(comments, composeComment(t.tblName, col))
+	}
+	query += ")"
+
+	res, err = r.Sql().Exec(query)
+	// create indices
+	_, err = r.createIndices(indices)
+	if err != nil {
+		return nil, err
+	}
+	// create comments
+	comments = append(comments, t.composeTableComment())
+	_, err = r.createComments(comments)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
+	l := len(t.columns)
+
+	var indices []string
+	var comments []string
+	query := ""
+	for k, col := range t.columns {
+		if col.IsModify {
+			query += composeModifyColumn(t.tblName, col)
+		} else if col.IsDrop {
+			query += composeDropColumn(t.tblName, col)
+		} else { // create new column/comment/index
+			query += composeAddColumn(t.tblName, col)
+			indices = append(indices, composeIndex(t.tblName, col))
+			comments = append(comments, composeComment(t.tblName, col))
+		}
+
+		if k < l-1 {
+			query += SemiColon
+		}
+	}
+
+	res, err = r.Sql().Exec(query)
+
+	// create indices
+	_, err = r.createIndices(indices)
+	if err != nil {
+		return nil, err
+	}
+	// create comments
+	_, err = r.createComments(comments)
+	if err != nil {
+		return nil, err
+	}
+	return
 }

@@ -11,7 +11,7 @@ func TestDB_CreateTable(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
 
-	_, err = db.CreateTable(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) {
 		table.Increments("id")
 		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
 		table.SmallInt("cnt").Default(1)
@@ -32,7 +32,7 @@ func TestDB_CreateTable(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
-	_, err = db.CreateTable("tbl_to_ref", func(table *Table) {
+	_, err = db.Schema("tbl_to_ref", func(table *Table) {
 		table.Increments("id")
 		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", TableToCreate, "id")
 	})
@@ -47,7 +47,10 @@ func TestDB_CreateTable(t *testing.T) {
 }
 
 func TestTable_BigIncrements(t *testing.T) {
-	res, err := db.CreateTable(TableToCreate, func(table *Table) {
+	_, err := db.DropIfExists(TableToCreate)
+	assert.NoError(t, err)
+
+	res, err := db.Schema(TableToCreate, func(table *Table) {
 		table.BigIncrements("id")
 		table.Numeric("price", 4, 3)
 		table.Jsonb("taxes")
@@ -61,12 +64,24 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
+	res, err = db.Schema(TableToCreate, func(table *Table) {
+		table.String("title", 64)
+	})
+	assert.NoError(t, err)
+
+	isCol, err := db.HasColumns("public", TableToCreate, "title")
+	assert.NoError(t, err)
+	assert.True(t, isCol)
+
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)
 }
 
 func TestTable_DateTime(t *testing.T) {
-	_, err := db.CreateTable(TableToCreate, func(table *Table) {
+	_, err := db.DropIfExists(TableToCreate)
+	assert.NoError(t, err)
+
+	_, err = db.Schema(TableToCreate, func(table *Table) {
 		table.Increments("id")
 		table.Json("settings")
 		table.Char("tag", 10)
@@ -80,6 +95,6 @@ func TestTable_DateTime(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
-	_, err = db.DropIfExists(TableToCreate)
+	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)
 }
