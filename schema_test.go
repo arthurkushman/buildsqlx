@@ -64,6 +64,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
+	// test add the column
 	res, err = db.Schema(TableToCreate, func(table *Table) {
 		table.String("title", 64)
 	})
@@ -72,6 +73,22 @@ func TestTable_BigIncrements(t *testing.T) {
 	isCol, err := db.HasColumns("public", TableToCreate, "title")
 	assert.NoError(t, err)
 	assert.True(t, isCol)
+
+	// test modify the column
+	res, err = db.Schema(TableToCreate, func(table *Table) {
+		table.String("title", 128).Change()
+	})
+	assert.NoError(t, err)
+
+	// test drop the column
+	res, err = db.Schema(TableToCreate, func(table *Table) {
+		table.DropColumn("title")
+	})
+	assert.NoError(t, err)
+
+	isCol, err = db.HasColumns("public", TableToCreate, "title")
+	assert.NoError(t, err)
+	assert.False(t, isCol)
 
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)

@@ -28,7 +28,7 @@ Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-b
 * [Determining If Records Exist](#user-content-determining-if-records-exist)
 * [Aggregates](#user-content-aggregates)
 * [Create table](#user-content-create-table)
-
+* [Add / Modify / Drop columns](#user-content-add--modify--drop-columns)
 ## Selects, Ordering, Limit & Offset
 
 You may not always want to select all columns from a database table. Using the select method, you can specify a custom select clause for the query:
@@ -299,7 +299,7 @@ sum, err := db.Table(UsersTable).Sum("points")
 
 ## Create table
 To create a new database table, use the CreateTable method. 
-The CreateTable method accepts two arguments. 
+The Schema method accepts two arguments. 
 The first is the name of the table, while the second is an anonymous function/closure which receives a Table struct that may be used to define the new table:
 ```go
 	res, err := db.Schema("big_tbl", func(table *Table) {
@@ -327,4 +327,19 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.Increments("id")
 		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id")
 	})	
+```
+
+## Add / Modify / Drop columns
+The Table structure in the Schema's 2nd argument may be used to update existing tables. Just the way you've been created it.
+The Change method allows you to modify some existing column types to a new type or modify the column's attributes.
+```go
+	res, err := db.Schema("tbl_name", func(table *Table) {
+		table.String("title", 128).Change()
+	})
+```
+Use DropColumn method to remove any column:
+```go
+	res, err := db.Schema(TableToCreate, func(table *Table) {
+		table.DropColumn("tbl_name")
+	})
 ```

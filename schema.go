@@ -38,7 +38,7 @@ const (
 	SemiColon      = ";"
 	AlterTable     = "ALTER TABLE "
 	Add            = " ADD "
-	Modify         = " MODIFY "
+	Modify         = " ALTER "
 	Drop           = " DROP "
 )
 
@@ -131,8 +131,16 @@ func composeDropColumn(tblName string, col *column) string {
 	return columnDef(tblName, col, Drop)
 }
 
-func columnDef(tblName string, col *column, op string) string {
-	return AlterTable + tblName + op + "COLUMN " + col.Name + " " + string(col.ColumnType) + buildColumnOptions(col)
+// concats all definition in 1 string expression
+func columnDef(tblName string, col *column, op string) (colDef string) {
+	colDef = AlterTable + tblName + op + "COLUMN " + col.Name
+	if op == Modify {
+		colDef += " TYPE "
+	}
+	if op != Drop {
+		colDef += " " + string(col.ColumnType) + buildColumnOptions(col)
+	}
+	return
 }
 
 func buildColumnOptions(col *column) (colSchema string) {
@@ -357,6 +365,11 @@ func buildDateTIme(colNm, t, defType string, isDefault bool) *column {
 	return col
 }
 
+// Change the column type/length/nullable etc options
+func (t *Table) Change() {
+	t.columns[len(t.columns)-1].IsModify = true
+}
+
 // DropColumn the column named colNm in this table context
 func (t *Table) DropColumn(colNm string) {
 	t.columns = append(t.columns, &column{Name: colNm, IsDrop: true})
@@ -380,6 +393,10 @@ func (r *DB) createTable(t *Table) (res sql.Result, err error) {
 	query += ")"
 
 	res, err = r.Sql().Exec(query)
+	if err != nil {
+		return nil, err
+	}
+
 	// create indices
 	_, err = r.createIndices(indices)
 	if err != nil {
@@ -394,6 +411,7 @@ func (r *DB) createTable(t *Table) (res sql.Result, err error) {
 	return
 }
 
+// adds, modifies or deletes column
 func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
 	l := len(t.columns)
 
@@ -417,6 +435,9 @@ func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
 	}
 
 	res, err = r.Sql().Exec(query)
+	if err != nil {
+		return nil, err
+	}
 
 	// create indices
 	_, err = r.createIndices(indices)
