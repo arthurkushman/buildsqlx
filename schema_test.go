@@ -17,7 +17,7 @@ func TestDB_CreateTable(t *testing.T) {
 		table.SmallInt("cnt").Default(1)
 		table.Integer("points").NotNull()
 		table.BigInt("likes").Index("idx_likes")
-		table.Text("comment").Comment("user comment")
+		table.Text("comment").Comment("user comment").Collation("de-LU-x-icu")
 		table.DblPrecision("likes_to_points").Default(0.0)
 		table.Decimal("tax", 2, 2)
 		table.TsVector("body")

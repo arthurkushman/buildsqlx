@@ -1,5 +1,5 @@
 # buildsqlx
-Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-button/img/tweet.png)](https://twitter.com/intent/tweet?text=Go%20database%20query%20builder%20library%20&url=https://github.com/arthurkushman/buildsqlx&hashtags=go,golang,sql,builder,postgresql,mysql,sql-builder,developers)
+Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-button/img/tweet.png)](https://twitter.com/intent/tweet?text=Go%20database%20query%20builder%20library%20&url=https://github.com/arthurkushman/buildsqlx&hashtags=go,golang,sql,builder,postgresql,sql-builder,developers)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/arthurkushman/buildsqlx)](https://goreportcard.com/report/github.com/arthurkushman/buildsqlx)
 [![Build and run](https://github.com/arthurkushman/buildsqlx/workflows/Build%20and%20run/badge.svg)](https://github.com/arthurkushman/buildsqlx/actions)
@@ -308,7 +308,7 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.SmallInt("cnt").Default(1)
 		table.Integer("points").NotNull()
 		table.BigInt("likes").Index("idx_likes")
-		table.Text("comment").Comment("user comment")
+		table.Text("comment").Comment("user comment").Collation("de_DE")
 		table.DblPrecision("likes_to_points").Default(0.0)
 		table.Char("tag", 10)
 		table.DateTime("created_at", true)

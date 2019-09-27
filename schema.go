@@ -64,6 +64,7 @@ type column struct {
 	Comment      *string
 	IsDrop       bool
 	IsModify     bool
+	Collation    *string
 }
 
 // Schema creates and/or manipulates table structure with an appropriate types/indices/comments/defaults/nulls etc
@@ -154,6 +155,10 @@ func buildColumnOptions(col *column) (colSchema string) {
 
 	if col.Default != nil {
 		colSchema += " DEFAULT " + *col.Default
+	}
+
+	if col.Collation != nil {
+		colSchema += " COLLATE \"" + *col.Collation + "\""
 	}
 	return
 }
@@ -256,6 +261,12 @@ func (t *Table) Decimal(colNm string, precision, scale uint64) *Table {
 // NotNull sets the last column to not null
 func (t *Table) NotNull() *Table {
 	t.columns[len(t.columns)-1].IsNotNull = true
+	return t
+}
+
+// NotNull sets the last column to not null
+func (t *Table) Collation(coll string) *Table {
+	t.columns[len(t.columns)-1].Collation = &coll
 	return t
 }
 
