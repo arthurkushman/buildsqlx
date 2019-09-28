@@ -112,6 +112,12 @@ func TestTable_DateTime(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
+	// test modify the column
+	_, err = db.Schema(TableToCreate, func(table *Table) {
+		table.String("tag", 12).Index("idx_tag")
+	})
+	assert.NoError(t, err)
+
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)
 }

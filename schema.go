@@ -34,12 +34,12 @@ const (
 
 // specific for PostgreSQL driver
 const (
-	StandardSchema = "public"
-	SemiColon      = ";"
-	AlterTable     = "ALTER TABLE "
-	Add            = " ADD "
-	Modify         = " ALTER "
-	Drop           = " DROP "
+	DefaultSchema = "public"
+	SemiColon     = ";"
+	AlterTable    = "ALTER TABLE "
+	Add           = " ADD "
+	Modify        = " ALTER "
+	Drop          = " DROP "
 )
 
 type colType string
@@ -74,7 +74,7 @@ func (r *DB) Schema(tblName string, fn func(table *Table)) (res sql.Result, err 
 
 	l := len(tbl.columns)
 	if l > 0 {
-		tblExists, err := r.HasTable(StandardSchema, tblName)
+		tblExists, err := r.HasTable(DefaultSchema, tblName)
 		if err != nil {
 			return nil, err
 		}
@@ -434,8 +434,11 @@ func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
 			query += composeModifyColumn(t.tblName, col)
 		} else if col.IsDrop {
 			query += composeDropColumn(t.tblName, col)
-		} else { // create new column/comment/index
-			query += composeAddColumn(t.tblName, col)
+		} else { // create new column/comment/index or just add comments indices
+			isCol, _ := r.HasColumns(DefaultSchema, t.tblName, col.Name)
+			if !isCol {
+				query += composeAddColumn(t.tblName, col)
+			}
 			indices = append(indices, composeIndex(t.tblName, col))
 			comments = append(comments, composeComment(t.tblName, col))
 		}
