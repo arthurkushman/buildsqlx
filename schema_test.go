@@ -121,7 +121,7 @@ func TestTable_DateTime(t *testing.T) {
 
 	isCol, err := db.HasColumns("public", TableToCreate, "options")
 	assert.NoError(t, err)
-	assert.False(t, isCol)
+	assert.True(t, isCol)
 
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)
