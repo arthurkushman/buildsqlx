@@ -115,8 +115,13 @@ func TestTable_DateTime(t *testing.T) {
 	// test modify the column
 	_, err = db.Schema(TableToCreate, func(table *Table) {
 		table.String("tag", 12).Index("idx_tag")
+		table.Rename("settings", "options")
 	})
 	assert.NoError(t, err)
+
+	isCol, err := db.HasColumns("public", TableToCreate, "options")
+	assert.NoError(t, err)
+	assert.False(t, isCol)
 
 	_, err = db.Drop(TableToCreate)
 	assert.NoError(t, err)

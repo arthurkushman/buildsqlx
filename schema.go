@@ -40,6 +40,7 @@ const (
 	Add           = " ADD "
 	Modify        = " ALTER "
 	Drop          = " DROP "
+	Rename        = " RENAME "
 )
 
 type colType string
@@ -53,6 +54,7 @@ type Table struct {
 // collection of properties for the column
 type column struct {
 	Name         string
+	RenameTo     *string
 	IsNotNull    bool
 	IsPrimaryKey bool
 	ColumnType   colType
@@ -65,6 +67,7 @@ type column struct {
 	IsDrop       bool
 	IsModify     bool
 	Collation    *string
+	Op           string
 }
 
 // Schema creates and/or manipulates table structure with an appropriate types/indices/comments/defaults/nulls etc
@@ -124,7 +127,7 @@ func composeAddColumn(tblName string, col *column) string {
 
 // builds column definition
 func composeModifyColumn(tblName string, col *column) string {
-	return columnDef(tblName, col, Modify)
+	return columnDef(tblName, col, col.Op)
 }
 
 // builds column definition
@@ -135,6 +138,9 @@ func composeDropColumn(tblName string, col *column) string {
 // concats all definition in 1 string expression
 func columnDef(tblName string, col *column, op string) (colDef string) {
 	colDef = AlterTable + tblName + op + "COLUMN " + col.Name
+	if op == Rename {
+		return colDef + " TO " + *col.RenameTo
+	}
 	if op == Modify {
 		colDef += " TYPE "
 	}
@@ -381,6 +387,12 @@ func (t *Table) Change() {
 	t.columns[len(t.columns)-1].IsModify = true
 }
 
+// Change the column type/length/nullable etc options
+func (t *Table) Rename(from, to string) *Table {
+	t.columns = append(t.columns, &column{Name: from, RenameTo: &to, IsModify: true})
+	return t
+}
+
 // DropColumn the column named colNm in this table context
 func (t *Table) DropColumn(colNm string) {
 	t.columns = append(t.columns, &column{Name: colNm, IsDrop: true})
@@ -431,6 +443,10 @@ func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
 	query := ""
 	for k, col := range t.columns {
 		if col.IsModify {
+			col.Op = Modify
+			if col.RenameTo != nil {
+				col.Op = Rename
+			}
 			query += composeModifyColumn(t.tblName, col)
 		} else if col.IsDrop {
 			query += composeDropColumn(t.tblName, col)

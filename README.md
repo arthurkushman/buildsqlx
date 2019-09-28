@@ -328,6 +328,7 @@ The first is the name of the table, while the second is an anonymous function/cl
 		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id")
 		// to add index on existing column just repeat stmt + index e.g.:
 		table.Char("tag", 10).Index("idx_tag")
+		table.Rename("settings", "options")
 	})	
 ```
 
