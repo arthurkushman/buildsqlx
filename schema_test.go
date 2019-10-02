@@ -52,7 +52,7 @@ func TestTable_BigIncrements(t *testing.T) {
 
 	res, err := db.Schema(TableToCreate, func(table *Table) {
 		table.BigIncrements("id")
-		table.Numeric("price", 4, 3)
+		table.Numeric("price", 4, 3).Index("idx_price")
 		table.Jsonb("taxes")
 	})
 	assert.NoError(t, err)
@@ -67,6 +67,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	// test add the column
 	res, err = db.Schema(TableToCreate, func(table *Table) {
 		table.String("title", 64)
+		table.DropIndex("idx_price")
 	})
 	assert.NoError(t, err)
 

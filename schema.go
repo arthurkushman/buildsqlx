@@ -131,8 +131,12 @@ func composeModifyColumn(tblName string, col *column) string {
 }
 
 // builds column definition
-func composeDropColumn(tblName string, col *column) string {
-	return columnDef(tblName, col, Drop)
+func composeDrop(tblName string, col *column) string {
+	if col.IsIndex {
+		return dropIdxDef(col)
+	} else {
+		return columnDef(tblName, col, Drop)
+	}
 }
 
 // concats all definition in 1 string expression
@@ -148,6 +152,10 @@ func columnDef(tblName string, col *column, op string) (colDef string) {
 		colDef += " " + string(col.ColumnType) + buildColumnOptions(col)
 	}
 	return
+}
+
+func dropIdxDef(col *column) string {
+	return "DROP INDEX " + col.IdxName
 }
 
 func buildColumnOptions(col *column) (colSchema string) {
@@ -296,12 +304,14 @@ func (t *Table) TableComment(cmt string) {
 
 // Index sets the last column to btree index
 func (t *Table) Index(idxName string) *Table {
+	t.columns[len(t.columns)-1].IdxName = idxName
 	t.columns[len(t.columns)-1].IsIndex = true
 	return t
 }
 
 // Unique sets the last column to unique index
 func (t *Table) Unique(idxName string) *Table {
+	t.columns[len(t.columns)-1].IdxName = idxName
 	t.columns[len(t.columns)-1].IsUnique = true
 	return t
 }
@@ -398,6 +408,11 @@ func (t *Table) DropColumn(colNm string) {
 	t.columns = append(t.columns, &column{Name: colNm, IsDrop: true})
 }
 
+// DropIndex the column named idxNm in this table context
+func (t *Table) DropIndex(idxNm string) {
+	t.columns = append(t.columns, &column{IdxName: idxNm, IsDrop: true, IsIndex: true})
+}
+
 // createTable create table with relative columns/indices
 func (r *DB) createTable(t *Table) (res sql.Result, err error) {
 	l := len(t.columns)
@@ -449,7 +464,7 @@ func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
 			}
 			query += composeModifyColumn(t.tblName, col)
 		} else if col.IsDrop {
-			query += composeDropColumn(t.tblName, col)
+			query += composeDrop(t.tblName, col)
 		} else { // create new column/comment/index or just add comments indices
 			isCol, _ := r.HasColumns(DefaultSchema, t.tblName, col.Name)
 			if !isCol {
