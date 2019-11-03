@@ -348,3 +348,6 @@ res, err := db.Schema("tbl_name", func(table *Table) {
     table.DropIndex("idx_title")
 })
 ```
+
+PS Why use buildsqlx? Because it is simple and fast, yet versatile. 
+The performance achieved because of structs conversion lack, as all that you need is just a columns - u can get it from an associated array/map while the conversion itself and it's processing eats more CPU/memory resources.
