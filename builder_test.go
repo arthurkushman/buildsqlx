@@ -614,3 +614,28 @@ func TestDB_AndWhereBetween(t *testing.T) {
 
 	db.Truncate(UsersTable)
 }
+
+func TestDB_WhereRaw(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 5").AndWhereRaw("points > 123").Get()
+	assert.Equal(t, len(res), 3)
+
+	cnt, err := db.Table(UsersTable).WhereRaw("points > 123").AndWhereRaw("points < 12345").Count()
+	assert.Equal(t, cnt, int64(1))
+
+	db.Truncate(UsersTable)
+}
+
+func TestDB_Offset(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Offset(2).Limit(10).Get()
+	assert.Equal(t, len(res), 2)
+
+	db.Truncate(UsersTable)
+}

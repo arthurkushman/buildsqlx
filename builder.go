@@ -302,7 +302,7 @@ func convertToStr(val interface{}) string {
 
 // WhereRaw accepts custom string to apply it to where clause
 func (r *DB) WhereRaw(raw string) *DB {
-	r.Builder.where = raw
+	r.Builder.where = " WHERE " + raw
 	return r
 }
 
