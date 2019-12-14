@@ -39,19 +39,15 @@ func TestMain(m *testing.M) {
 
 func TestSelectAndLimit(t *testing.T) {
 	db.Truncate(TestTable)
-
 	db.Table(TestTable).Insert(dataMap)
 
 	qDb := db.Table(TestTable).Select("foo", "bar")
-
 	res, err := qDb.AddSelect("baz").Limit(15).Get()
 	assert.NoError(t, err)
 
 	for k, mapVal := range dataMap {
 		for _, v := range res {
-			if v[k] != mapVal {
-				t.Fatalf("want: %T, got: %T", mapVal, v[k])
-			}
+			assert.Equal(t, v[k], mapVal)
 		}
 	}
 
@@ -69,9 +65,7 @@ func TestInsert(t *testing.T) {
 
 	for k, mapVal := range dataMap {
 		for _, v := range res {
-			if v[k] != mapVal {
-				t.Fatalf("want: %v, got: %v", mapVal, v[k])
-			}
+			assert.Equal(t, v[k], mapVal)
 		}
 	}
 
@@ -95,9 +89,7 @@ func TestInsertBatchSelectMultiple(t *testing.T) {
 
 	for mapKey, mapVal := range batchData {
 		for k, mV := range mapVal {
-			if res[mapKey][k] != mV {
-				t.Fatalf("want: %v, got: %v", mV, res[mapKey][k])
-			}
+			assert.Equal(t, res[mapKey][k], mV)
 		}
 	}
 
@@ -114,10 +106,7 @@ func TestWhereAndOr(t *testing.T) {
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
 	assert.NoError(t, err)
 
-	if res[0]["foo"] != cmp {
-		t.Fatalf("want: %s, got: %s", res[0]["foo"], cmp)
-	}
-
+	assert.Equal(t, res[0]["foo"], cmp)
 	db.Truncate(TestTable)
 }
 
@@ -159,13 +148,8 @@ func TestJoins(t *testing.T) {
 	assert.NoError(t, err)
 
 	for k, val := range res {
-		if val["name"] != batchUsers[k]["name"] {
-			t.Fatalf("want: %s, got: %s", val["name"], batchUsers[k]["name"])
-		}
-
-		if val["user_id"] != batchUsers[k]["id"] {
-			t.Fatalf("want: %d, got: %d", val["user_id"], batchUsers[k]["id"])
-		}
+		assert.Equal(t, val["name"], batchUsers[k]["name"])
+		assert.Equal(t, val["user_id"], batchUsers[k]["id"])
 	}
 
 	db.Truncate(UsersTable)
@@ -181,7 +165,6 @@ var rowsToUpdate = []struct {
 
 func TestUpdate(t *testing.T) {
 	db.Truncate(TestTable)
-
 	for _, obj := range rowsToUpdate {
 		err := db.Table(TestTable).Insert(obj.insert)
 		assert.NoError(t, err)
@@ -189,11 +172,8 @@ func TestUpdate(t *testing.T) {
 		rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(obj.update)
 		assert.NoError(t, err)
 
-		if rows < 1 {
-			t.Fatalf("Can not update rows: %s", obj.update)
-		}
+		assert.GreaterOrEqual(t, rows, int64(1))
 	}
-
 	db.Truncate(TestTable)
 }
 
@@ -213,10 +193,7 @@ func TestDelete(t *testing.T) {
 
 		rows, err := db.Table(TestTable).Where("baz", "=", obj.where["bar"]).Delete()
 		assert.NoError(t, err)
-
-		if rows < 1 {
-			t.Fatalf("Can not delete rows: %s", obj.where)
-		}
+		assert.GreaterOrEqual(t, rows, int64(1))
 	}
 }
 
@@ -241,19 +218,16 @@ func TestDB_Increment_Decrement(t *testing.T) {
 
 		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.incrRes).Get()
 		assert.NoError(t, err)
-
-		if len(res) < 1 && res[0]["baz"] != obj.incrRes {
-			t.Fatalf("want %d, got %d", res[0]["baz"], obj.incrRes)
-		}
+		assert.GreaterOrEqual(t, len(res), 1)
+		assert.Equal(t, res[0]["baz"], int64(obj.incrRes))
 
 		db.Table(TestTable).Decrement("baz", obj.decr)
 
 		res, err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.decrRes).Get()
 		assert.NoError(t, err)
 
-		if len(res) < 1 && res[0]["baz"] != obj.decrRes {
-			t.Fatalf("want %d, got %d", res[0]["baz"], obj.decrRes)
-		}
+		assert.GreaterOrEqual(t, len(res), 1)
+		assert.Equal(t, res[0]["baz"], int64(obj.decrRes))
 	}
 
 	db.Truncate(TestTable)
@@ -276,15 +250,12 @@ func TestDB_Replace(t *testing.T) {
 
 		rows, err = db.Table(TestTable).Replace(obj.replace, obj.conflict)
 		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, rows, int64(1))
 
-		if rows < 1 {
-			t.Fatal(err)
-		}
-
-		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.replace["baz"]).Get()
-		if len(res) < 1 && res[0]["foo"] != obj.replace["foo"] {
-			t.Fatalf("want %d, got %d", obj.replace["foo"], res[0]["foo"])
-		}
+		res, err := db.Table(TestTable).Select("foo").Where("baz", "=", obj.replace["baz"]).Get()
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, len(res), 1)
+		assert.Equal(t, res[0]["foo"], obj.replace["foo"])
 	}
 
 	db.Truncate(TestTable)
@@ -302,11 +273,10 @@ func TestDB_Union(t *testing.T) {
 	assert.NoError(t, err)
 
 	union := db.Table(TestTable).Select("bar", "baz").Union()
-	res, _ := union.Table(UsersTable).Select("name", "points").Get()
+	res, err := union.Table(UsersTable).Select("name", "points").Get()
+	assert.NoError(t, err)
 	for _, v := range res {
-		if v["points"] != userForUnion["points"] {
-			t.Fatalf("want %d, got %d", userForUnion["points"], v["points"])
-		}
+		assert.Equal(t, v["points"], userForUnion["points"])
 	}
 
 	db.Truncate(UsersTable)
@@ -329,19 +299,13 @@ func TestDB_InTransaction(t *testing.T) {
 func TestDB_HasTable(t *testing.T) {
 	tblExists, err := db.HasTable("public", PostsTable)
 	assert.NoError(t, err)
-
-	if !tblExists {
-		t.Fatalf("expected: true, got: false")
-	}
+	assert.True(t, tblExists)
 }
 
 func TestDB_HasColumns(t *testing.T) {
 	colsExists, err := db.HasColumns("public", PostsTable, "title", "user_id")
 	assert.NoError(t, err)
-
-	if !colsExists {
-		t.Fatalf("expected: true, got: false")
-	}
+	assert.True(t, colsExists)
 }
 
 func TestDB_First(t *testing.T) {
@@ -354,10 +318,7 @@ func TestDB_First(t *testing.T) {
 	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
 
 	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
-
-	if res["baz"] != int64(1234) {
-		t.Fatalf("want: %d, got: %d", int64(1234), res["baz"])
-	}
+	assert.Equal(t, res["baz"], int64(1234))
 
 	db.Truncate(TestTable)
 }
@@ -399,10 +360,7 @@ func TestDB_Value(t *testing.T) {
 	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).OrderBy("points", "desc").Value("name")
 	assert.NoError(t, err)
-
-	if res != TestUserName {
-		t.Fatalf("want: %s, got: %s", TestUserName, res)
-	}
+	assert.Equal(t, TestUserName, res)
 
 	db.Truncate(UsersTable)
 }
@@ -417,9 +375,7 @@ func TestDB_Pluck(t *testing.T) {
 
 	for k, v := range res {
 		resVal := v.(string)
-		if batchUsers[k]["name"] != resVal {
-			t.Fatalf("want: %s, got: %s", batchUsers[k]["name"], resVal)
-		}
+		assert.Equal(t, batchUsers[k]["name"], resVal)
 	}
 
 	db.Truncate(UsersTable)
@@ -437,9 +393,8 @@ func TestDB_PluckMap(t *testing.T) {
 		for key, value := range m {
 			keyVal := key.(string)
 			valueVal := value.(int64)
-			if batchUsers[k]["name"] != keyVal || batchUsers[k]["points"] != valueVal {
-				t.Fatalf("want: %s, got: %s and want: %d, got: %d", batchUsers[k]["name"], keyVal, batchUsers[k]["points"], valueVal)
-			}
+			assert.Equal(t, batchUsers[k]["name"], keyVal)
+			assert.Equal(t, batchUsers[k]["points"], valueVal)
 		}
 	}
 
