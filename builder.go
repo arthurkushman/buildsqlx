@@ -16,6 +16,9 @@ const (
 	joinRight     = "RIGHT"
 	joinFull      = "FULL"
 	joinFullOuter = "FULL OUTER"
+	where         = " WHERE "
+	and           = " AND "
+	or            = " OR "
 )
 
 // inner type to build qualified sql
@@ -136,13 +139,13 @@ func (r *DB) HavingRaw(raw string) *DB {
 
 // OrHavingRaw accepts custom string to apply it to having clause with logical OR
 func (r *DB) OrHavingRaw(raw string) *DB {
-	r.Builder.having += " OR " + raw
+	r.Builder.having += or + raw
 	return r
 }
 
 // AndHavingRaw accepts custom string to apply it to having clause with logical OR
 func (r *DB) AndHavingRaw(raw string) *DB {
-	r.Builder.having += " AND " + raw
+	r.Builder.having += and + raw
 	return r
 }
 
@@ -249,37 +252,37 @@ func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
 
 // WhereBetween sets the clause BETWEEN 2 values
 func (r *DB) WhereBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where = " WHERE " + col + " BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	r.Builder.where = where + col + " BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
 // OrWhereBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += " OR " + col + " BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	r.Builder.where += or + col + " BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
 // AndWhereBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += " AND " + col + " BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	r.Builder.where += and + col + " BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
 // WhereBetween sets the clause BETWEEN 2 values
 func (r *DB) WhereNotBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where = " WHERE " + col + " NOT BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	r.Builder.where = where + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
 // OrWhereBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereNotBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += " OR " + col + " NOT BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	r.Builder.where += or + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
 // AndWhereBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereNotBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += " AND " + col + " NOT BETWEEN " + convertToStr(val1) + " AND " + convertToStr(val2)
+	r.Builder.where += and + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
@@ -302,19 +305,19 @@ func convertToStr(val interface{}) string {
 
 // WhereRaw accepts custom string to apply it to where clause
 func (r *DB) WhereRaw(raw string) *DB {
-	r.Builder.where = " WHERE " + raw
+	r.Builder.where = where + raw
 	return r
 }
 
 // OrWhereRaw accepts custom string to apply it to where clause with logical OR
 func (r *DB) OrWhereRaw(raw string) *DB {
-	r.Builder.where += " OR " + raw
+	r.Builder.where += or + raw
 	return r
 }
 
 // AndWhereRaw accepts custom string to apply it to where clause with logical OR
 func (r *DB) AndWhereRaw(raw string) *DB {
-	r.Builder.where += " AND " + raw
+	r.Builder.where += and + raw
 	return r
 }
 
@@ -355,74 +358,98 @@ func (r *DB) Rename(from, to string) (sql.Result, error) {
 }
 
 // WhereIn appends IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) WhereIn(field string, in []interface{}) *DB {
-	r.Builder.where += " " + field + " IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+func (r *DB) WhereIn(field string, in interface{}) *DB {
+	ins, err := interfaceToSlice(in)
+	if err != nil {
+		return nil
+	}
+	r.Builder.where += where + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
 // WhereNotIn appends NOT IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) WhereNotIn(field string, in []interface{}) *DB {
-	r.Builder.where += " " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+func (r *DB) WhereNotIn(field string, in interface{}) *DB {
+	ins, err := interfaceToSlice(in)
+	if err != nil {
+		return nil
+	}
+	r.Builder.where += where + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
 // OrWhereIn appends OR IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) OrWhereIn(field string, in []interface{}) *DB {
-	r.Builder.where += " OR " + field + " IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+func (r *DB) OrWhereIn(field string, in interface{}) *DB {
+	ins, err := interfaceToSlice(in)
+	if err != nil {
+		return nil
+	}
+	r.Builder.where += or + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
 // OrWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) OrWhereNotIn(field string, in []interface{}) *DB {
-	r.Builder.where += " OR " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+func (r *DB) OrWhereNotIn(field string, in interface{}) *DB {
+	ins, err := interfaceToSlice(in)
+	if err != nil {
+		return nil
+	}
+	r.Builder.where += or + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
 // AndWhereIn appends OR IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) AndWhereIn(field string, in []interface{}) *DB {
-	r.Builder.where += " AND " + field + " IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+func (r *DB) AndWhereIn(field string, in interface{}) *DB {
+	ins, err := interfaceToSlice(in)
+	if err != nil {
+		return nil
+	}
+	r.Builder.where += and + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
 // AndWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
 func (r *DB) AndWhereNotIn(field string, in []interface{}) *DB {
-	r.Builder.where += " AND " + field + " NOT IN (" + strings.Join(prepareSlice(in), ", ") + ")"
+	ins, err := interfaceToSlice(in)
+	if err != nil {
+		return nil
+	}
+	r.Builder.where += and + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
 // WhereIsNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) WhereNull(field string) *DB {
-	r.Builder.where += " " + field + " IS NULL"
+	r.Builder.where = where + field + " IS NULL"
 	return r
 }
 
 // WhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) WhereNotNull(field string) *DB {
-	r.Builder.where += " " + field + " IS NOT NULL"
+	r.Builder.where = where + field + " IS NOT NULL"
 	return r
 }
 
 // OrWhereIsNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) OrWhereNull(field string) *DB {
-	r.Builder.where += " OR " + field + " IS NULL"
+	r.Builder.where += or + field + " IS NULL"
 	return r
 }
 
 // OrWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) OrWhereNotNull(field string) *DB {
-	r.Builder.where += " OR " + field + " IS NOT NULL"
+	r.Builder.where += or + field + " IS NOT NULL"
 	return r
 }
 
 // AndWhereIsNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) AndWhereNull(field string) *DB {
-	r.Builder.where += " AND " + field + " IS NULL"
+	r.Builder.where += and + field + " IS NULL"
 	return r
 }
 
 // AndWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) AndWhereNotNull(field string) *DB {
-	r.Builder.where += " AND " + field + " IS NOT NULL"
+	r.Builder.where += and + field + " IS NOT NULL"
 	return r
 }
 

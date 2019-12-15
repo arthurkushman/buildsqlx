@@ -639,3 +639,44 @@ func TestDB_Offset(t *testing.T) {
 
 	db.Truncate(UsersTable)
 }
+
+func TestDB_Rename(t *testing.T) {
+	tbl := "tbl1"
+	tbl2 := "tbl2"
+	db.Drop(tbl)
+	db.Drop(tbl2)
+
+	_, err := db.Schema(tbl, func(table *Table) {
+		table.Increments("id")
+	})
+	assert.NoError(t, err)
+
+	_, err = db.Rename(tbl, tbl2)
+	assert.NoError(t, err)
+
+	exists, err := db.HasTable("public", tbl2)
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestDB_WhereIn(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("points", []int64{1, 2, 3}).Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 2)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_WhereNotNull(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").WhereNotNull("points").AndWhereNotNull("name").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), len(batchUsers))
+	db.Truncate(UsersTable)
+}
