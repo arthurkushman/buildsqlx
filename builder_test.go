@@ -621,8 +621,8 @@ func TestDB_WhereRaw(t *testing.T) {
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 5").AndWhereRaw("points > 123").Get()
-	assert.Equal(t, len(res), 3)
+	res, err := db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 15").OrWhereRaw("points > 1234").Get()
+	assert.Equal(t, len(res), 2)
 
 	cnt, err := db.Table(UsersTable).WhereRaw("points > 123").AndWhereRaw("points < 12345").Count()
 	assert.Equal(t, cnt, int64(1))
@@ -716,6 +716,17 @@ func TestDB_WhereNotNull(t *testing.T) {
 	assert.Equal(t, len(res), len(batchUsers))
 
 	res, err = db.Table(UsersTable).Select("name").WhereNotNull("points").OrWhereNotNull("name").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), len(batchUsers))
+	db.Truncate(UsersTable)
+}
+
+func TestDB_LockForUpdate(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").LockForUpdate().Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
 	db.Truncate(UsersTable)
