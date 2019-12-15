@@ -539,7 +539,7 @@ func TestDB_AllJoins(t *testing.T) {
 	res, err := db.Table(UsersTable).Select("name", "post", "user_id").InnerJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(res), len(batchPosts))
+	assert.Equal(t, len(res), len(batchPosts)-1)
 
 	res, err = db.Table(PostsTable).Select("name", "post", "user_id").RightJoin(UsersTable, "posts.user_id", "=", "users.id").Get()
 	assert.NoError(t, err)
@@ -549,18 +549,18 @@ func TestDB_AllJoins(t *testing.T) {
 	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(res), len(batchUsers))
+	assert.Equal(t, len(res), len(batchUsers)+1)
 
 	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(res), len(batchUsers))
+	assert.Equal(t, len(res), len(batchUsers)+1)
 
 	// note InRandomOrder check
 	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, "users.id", "=", "posts.user_id").InRandomOrder().Get()
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(res), len(batchUsers))
+	assert.Equal(t, len(res), len(batchUsers)+1)
 
 	db.Truncate(PostsTable)
 	db.Truncate(UsersTable)
