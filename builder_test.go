@@ -125,6 +125,7 @@ var batchPosts = []map[string]interface{}{
 	0: {"id": int64(1), "title": "Lorem ipsum dolor sit amet,", "post": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "user_id": int64(1), "updated_at": "2086-09-09 18:27:40"},
 	1: {"id": int64(2), "title": "Sed ut perspiciatis unde omnis iste natus", "post": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.", "user_id": int64(2), "updated_at": "2087-09-09 18:27:40"},
 	2: {"id": int64(3), "title": "Ut enim ad minima veniam", "post": "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?", "user_id": int64(3), "updated_at": "2088-09-09 18:27:40"},
+	3: {"id": int64(4), "title": "Lorem ipsum dolor sit amet,", "post": nil, "user_id": nil, "updated_at": "2086-09-09 18:27:40"},
 }
 
 func TestJoins(t *testing.T) {
@@ -664,10 +665,45 @@ func TestDB_WhereIn(t *testing.T) {
 	err := db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("points", []int64{1, 2, 3}).Get()
+	res, err := db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("id", []int64{1, 2}).Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 2)
+
+	res, err = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).AndWhereIn("id", []int64{1, 2}).Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), 2)
 	db.Truncate(UsersTable)
+}
+
+func TestDB_WhereNotIn(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).OrWhereNotIn("id", []int64{1, 2}).Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 2)
+
+	res, err = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).AndWhereNotIn("id", []int64{1, 2}).Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 2)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_WhereNull(t *testing.T) {
+	db.Truncate(PostsTable)
+	err := db.Table(PostsTable).InsertBatch(batchPosts)
+	assert.NoError(t, err)
+
+	res, err := db.Table(PostsTable).Select("title").WhereNull("post").AndWhereNull("user_id").Get()
+	db.Dump()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 1)
+
+	res, err = db.Table(PostsTable).Select("title").WhereNull("post").OrWhereNull("user_id").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 1)
+	db.Truncate(PostsTable)
 }
 
 func TestDB_WhereNotNull(t *testing.T) {
@@ -676,6 +712,10 @@ func TestDB_WhereNotNull(t *testing.T) {
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereNotNull("points").AndWhereNotNull("name").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), len(batchUsers))
+
+	res, err = db.Table(UsersTable).Select("name").WhereNotNull("points").OrWhereNotNull("name").Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
 	db.Truncate(UsersTable)

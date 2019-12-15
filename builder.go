@@ -408,7 +408,7 @@ func (r *DB) AndWhereIn(field string, in interface{}) *DB {
 }
 
 // AndWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) AndWhereNotIn(field string, in []interface{}) *DB {
+func (r *DB) AndWhereNotIn(field string, in interface{}) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -498,8 +498,7 @@ func (r *DB) Dump() {
 
 // Dd prints raw sql to stdout and exit
 func (r *DB) Dd() {
-	log.SetOutput(os.Stdout)
-	log.Println(r.Builder.buildSelect())
+	r.Dump()
 	os.Exit(0)
 }
 
