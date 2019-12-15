@@ -363,7 +363,7 @@ func (r *DB) WhereIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where += where + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.Builder.where = where + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
@@ -373,7 +373,7 @@ func (r *DB) WhereNotIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where += where + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.Builder.where = where + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
 	return r
 }
 
