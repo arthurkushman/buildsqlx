@@ -731,3 +731,25 @@ func TestDB_LockForUpdate(t *testing.T) {
 	assert.Equal(t, len(res), len(batchUsers))
 	db.Truncate(UsersTable)
 }
+
+func TestDB_UnionAll(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").UnionAll().Table(UsersTable).Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), len(batchUsers))
+	db.Truncate(UsersTable)
+}
+
+func TestDB_FullOuterJoin(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	res, err := db.Table(UsersTable).Select("name").FullOuterJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), len(batchUsers))
+	db.Truncate(UsersTable)
+}
