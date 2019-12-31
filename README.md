@@ -29,6 +29,7 @@ Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-b
 * [Aggregates](#user-content-aggregates)
 * [Create table](#user-content-create-table)
 * [Add / Modify / Drop columns](#user-content-add--modify--drop-columns)
+* [Chunking Results](#user-content-chunking-results)
 ## Selects, Ordering, Limit & Offset
 
 You may not always want to select all columns from a database table. Using the select method, you can specify a custom select clause for the query:
@@ -346,6 +347,21 @@ res, err := db.Schema("tbl_name", func(table *Table) {
     table.DropColumn("deleted_at")
     // To drop an index on the column    
     table.DropIndex("idx_title")
+})
+```
+
+## Chunking Results
+If you need to work with thousands of database records, consider using the chunk method. 
+This method retrieves a small chunk of the results at a time and feeds each chunk into a closure for processing.
+```go
+err = db.Table("user_achievements").Select("points").Where("id", "=", id).Chunk(100, func(users []map[string]interface{}) bool {
+    for _, m := range users {
+        if val, ok := m["points"];ok {
+            pointsCalc += diffFormula(val.(int64))
+        }
+        // or you can return false here to stop running chunks 
+    }
+    return true
 })
 ```
 

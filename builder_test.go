@@ -753,3 +753,50 @@ func TestDB_FullOuterJoin(t *testing.T) {
 	assert.Equal(t, len(res), len(batchUsers))
 	db.Truncate(UsersTable)
 }
+
+func TestDB_Chunk(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+	var sumOfPoints int64
+	err = db.Table(UsersTable).Select("name", "points").Chunk(2, func(users []map[string]interface{}) bool {
+		for _, m := range users {
+			if val, ok := m["points"]; ok {
+				sumOfPoints += val.(int64)
+			}
+		}
+		return true
+	})
+
+	assert.NoError(t, err)
+	var initialSum int64
+	for _, mm := range batchUsers {
+		if val, ok := mm["points"]; ok {
+			initialSum += val.(int64)
+		}
+	}
+	assert.Equal(t, sumOfPoints, initialSum)
+	db.Truncate(UsersTable)
+}
+
+func TestDB_ChunkFalse(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+	var sumOfPoints int64
+	err = db.Table(UsersTable).Select("name", "points").Chunk(2, func(users []map[string]interface{}) bool {
+		for _, m := range users {
+			if sumOfPoints > 0 {
+				return false
+			}
+			if val, ok := m["points"]; ok {
+				sumOfPoints += val.(int64)
+			}
+		}
+		return true
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, sumOfPoints, batchUsers[0]["points"].(int64))
+	db.Truncate(UsersTable)
+}

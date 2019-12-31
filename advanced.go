@@ -2,6 +2,7 @@ package buildsqlx
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -108,4 +109,41 @@ func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 	}
 
 	return res.RowsAffected()
+}
+
+func (r *DB) Chunk(amount int64, fn func(rows []map[string]interface{}) bool) error {
+	cols := r.Builder.columns
+	cnt, err := r.Count()
+	if err != nil {
+		return err
+	}
+
+	r.Builder.columns = cols
+	if amount <= 0 {
+		return fmt.Errorf("chunk can't be <= 0, your chunk is: %d", amount)
+	}
+
+	if cnt < amount {
+		res, err := r.Get()
+		if err != nil {
+			return err
+		}
+		fn(res) // execute all resulting records
+		return nil
+	}
+
+	// executing chunks amount < cnt
+	c := int64(math.Ceil(float64(cnt / amount)))
+	var i int64
+	for i = 0; i < c; i++ {
+		rows, err := r.Offset(i * amount).Limit(amount).Get() // by 100 rows from 100 x n
+		if err != nil {
+			return err
+		}
+		res := fn(rows)
+		if !res { // stop an execution when false returned by user
+			break
+		}
+	}
+	return nil
 }
