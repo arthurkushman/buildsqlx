@@ -800,3 +800,40 @@ func TestDB_ChunkFalse(t *testing.T) {
 	assert.Equal(t, sumOfPoints, batchUsers[0]["points"].(int64))
 	db.Truncate(UsersTable)
 }
+
+func TestDB_ChunkLessThenAmount(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	var sumOfPoints int64
+	err = db.Table(UsersTable).Select("name", "points").Chunk(int64(len(batchUsers)+1), func(users []map[string]interface{}) bool {
+		for _, m := range users {
+			if val, ok := m["points"]; ok {
+				sumOfPoints += val.(int64)
+			}
+		}
+		return true
+	})
+	assert.NoError(t, err)
+	assert.Greater(t, sumOfPoints, int64(0))
+	db.Truncate(UsersTable)
+}
+
+func TestDB_ChunkLessThenZeroErr(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	assert.NoError(t, err)
+
+	var sumOfPoints int64
+	err = db.Table(UsersTable).Select("name", "points").Chunk(int64(-1), func(users []map[string]interface{}) bool {
+		for _, m := range users {
+			if val, ok := m["points"]; ok {
+				sumOfPoints += val.(int64)
+			}
+		}
+		return true
+	})
+	assert.Errorf(t, err, "chunk can't be <= 0, your chunk is: -1")
+	db.Truncate(UsersTable)
+}
