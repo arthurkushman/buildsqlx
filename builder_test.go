@@ -840,6 +840,8 @@ func TestDB_ChunkLessThenZeroErr(t *testing.T) {
 
 func TestDB_ChunkBuilderTableErr(t *testing.T) {
 	db.Truncate(UsersTable)
+	// reset prev set up table as we don't want to use Table to produce err
+	db.Builder.table = ""
 	err := db.InsertBatch(batchUsers)
 	assert.Errorf(t, err, errTableCallBeforeOp)
 
