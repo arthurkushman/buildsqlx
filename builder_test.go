@@ -837,3 +837,28 @@ func TestDB_ChunkLessThenZeroErr(t *testing.T) {
 	assert.Errorf(t, err, "chunk can't be <= 0, your chunk is: -1")
 	db.Truncate(UsersTable)
 }
+
+func TestDB_ChunkBuilderTableErr(t *testing.T) {
+	db.Truncate(UsersTable)
+	err := db.InsertBatch(batchUsers)
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Select("foo", "bar", "baz").Get()
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	err = db.Insert(dataMap)
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.InsertGetId(dataMap)
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Update(dataMap)
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Delete()
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Replace(dataMap, "id")
+	assert.Errorf(t, err, errTableCallBeforeOp)
+	db.Truncate(UsersTable)
+}
