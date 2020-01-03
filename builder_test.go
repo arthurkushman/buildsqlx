@@ -862,5 +862,18 @@ func TestDB_ChunkBuilderTableErr(t *testing.T) {
 
 	_, err = db.Replace(dataMap, "id")
 	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Increment("clmn", 123)
+	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Exists()
+	assert.Errorf(t, err, errTableCallBeforeOp)
 	db.Truncate(UsersTable)
+}
+
+func TestDB_FirsNoRecordsErr(t *testing.T) {
+	db.Truncate(TestTable)
+	_, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
+	assert.Errorf(t, err, "no records were produced by query: %s")
+	db.Truncate(TestTable)
 }
