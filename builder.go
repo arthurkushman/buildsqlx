@@ -157,7 +157,7 @@ func (r *DB) AddSelect(args ...string) *DB {
 	return r
 }
 
-// SelectRow accepts custom string to select from a table
+// SelectRaw accepts custom string to select from a table
 func (r *DB) SelectRaw(raw string) *DB {
 	r.Builder.columns = []string{raw}
 	return r
@@ -229,7 +229,7 @@ func (r *DB) Where(operand, operator string, val interface{}) *DB {
 	return r.buildWhere("", operand, operator, val)
 }
 
-// Where accepts left operand-operator-right operand to apply them to where clause
+// AndWhere accepts left operand-operator-right operand to apply them to where clause
 // with AND logical operator
 func (r *DB) AndWhere(operand, operator string, val interface{}) *DB {
 	return r.buildWhere("AND", operand, operator, val)
@@ -268,19 +268,19 @@ func (r *DB) AndWhereBetween(col string, val1, val2 interface{}) *DB {
 	return r
 }
 
-// WhereBetween sets the clause BETWEEN 2 values
+// WhereNotBetween sets the clause NOT BETWEEN 2 values
 func (r *DB) WhereNotBetween(col string, val1, val2 interface{}) *DB {
 	r.Builder.where = where + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
-// OrWhereBetween sets the clause OR BETWEEN 2 values
+// OrWhereNotBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereNotBetween(col string, val1, val2 interface{}) *DB {
 	r.Builder.where += or + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
 }
 
-// AndWhereBetween sets the clause AND BETWEEN 2 values
+// AndWhereNotBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereNotBetween(col string, val1, val2 interface{}) *DB {
 	r.Builder.where += and + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
 	return r
@@ -347,7 +347,7 @@ func (r *DB) Truncate(tables string) (sql.Result, error) {
 	return r.Sql().Exec("TRUNCATE " + tables)
 }
 
-// Drop drops >=1 tables if they are existent
+// DropIfExists drops >=1 tables if they are existent
 func (r *DB) DropIfExists(tables string) (sql.Result, error) {
 	return r.Sql().Exec("DROP TABLE IF EXISTS " + tables)
 }
@@ -417,7 +417,7 @@ func (r *DB) AndWhereNotIn(field string, in interface{}) *DB {
 	return r
 }
 
-// WhereIsNull appends fieldName IS NULL stmt to WHERE clause
+// WhereNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) WhereNull(field string) *DB {
 	r.Builder.where = where + field + " IS NULL"
 	return r
@@ -429,7 +429,7 @@ func (r *DB) WhereNotNull(field string) *DB {
 	return r
 }
 
-// OrWhereIsNull appends fieldName IS NULL stmt to WHERE clause
+// OrWhereNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) OrWhereNull(field string) *DB {
 	r.Builder.where += or + field + " IS NULL"
 	return r
@@ -441,7 +441,7 @@ func (r *DB) OrWhereNotNull(field string) *DB {
 	return r
 }
 
-// AndWhereIsNull appends fieldName IS NULL stmt to WHERE clause
+// AndWhereNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) AndWhereNull(field string) *DB {
 	r.Builder.where += and + field + " IS NULL"
 	return r
@@ -484,6 +484,7 @@ func (r *DB) From(fromTbl string) *DB {
 	return r
 }
 
+// LockForUpdate locks table/row
 func (r *DB) LockForUpdate() *DB {
 	str := " FOR UPDATE"
 	r.Builder.lockForUpdate = &str

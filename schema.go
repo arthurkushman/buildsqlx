@@ -45,6 +45,7 @@ const (
 
 type colType string
 
+// Table is the type for operations on table schema
 type Table struct {
 	columns []*column
 	tblName string
@@ -84,9 +85,9 @@ func (r *DB) Schema(tblName string, fn func(table *Table)) (res sql.Result, err 
 
 		if tblExists { // modify tbl by adding/modifying/deleting columns/indices
 			return r.modifyTable(tbl)
-		} else { // create table with relative columns/indices
-			return r.createTable(tbl)
 		}
+		// create table with relative columns/indices
+		return r.createTable(tbl)
 	}
 	return
 }
@@ -134,9 +135,8 @@ func composeModifyColumn(tblName string, col *column) string {
 func composeDrop(tblName string, col *column) string {
 	if col.IsIndex {
 		return dropIdxDef(col)
-	} else {
-		return columnDef(tblName, col, Drop)
 	}
+	return columnDef(tblName, col, Drop)
 }
 
 // concats all definition in 1 string expression
@@ -249,13 +249,13 @@ func (t *Table) Char(colNm string, len uint64) *Table {
 	return t
 }
 
-// Text	creates text column
+// Text	creates text type column
 func (t *Table) Text(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeText})
 	return t
 }
 
-// Text	creates text column
+// DblPrecision	creates dbl precision type column
 func (t *Table) DblPrecision(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeDblPrecision})
 	return t
@@ -278,7 +278,7 @@ func (t *Table) NotNull() *Table {
 	return t
 }
 
-// NotNull sets the last column to not null
+// Collation sets the last column to specified collation
 func (t *Table) Collation(coll string) *Table {
 	t.columns[len(t.columns)-1].Collation = &coll
 	return t
@@ -353,7 +353,7 @@ func (t *Table) TsVector(colNm string) *Table {
 	return t
 }
 
-// TsVector creates tsvector typed column
+// TsQuery creates tsquery typed column
 func (t *Table) TsQuery(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeTsQuery})
 	return t
@@ -397,7 +397,7 @@ func (t *Table) Change() {
 	t.columns[len(t.columns)-1].IsModify = true
 }
 
-// Change the column type/length/nullable etc options
+// Rename the column "from" to the "to"
 func (t *Table) Rename(from, to string) *Table {
 	t.columns = append(t.columns, &column{Name: from, RenameTo: &to, IsModify: true})
 	return t

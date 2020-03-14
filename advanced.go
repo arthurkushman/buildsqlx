@@ -111,6 +111,8 @@ func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 	return res.RowsAffected()
 }
 
+// Chunk run queries by chinks by passing user-land function with an ability to stop execution when needed
+// by returning false and proceed to execute queries when return true
 func (r *DB) Chunk(amount int64, fn func(rows []map[string]interface{}) bool) error {
 	cols := r.Builder.columns
 	cnt, err := r.Count()
