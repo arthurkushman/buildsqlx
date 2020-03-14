@@ -405,6 +405,9 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 // if there are no results returned - txn will be rolled back, otherwise committed and returned
 func (r *DB) InTransaction(fn func() (interface{}, error)) error {
 	txn, err := r.Sql().Begin()
+	if err != nil {
+		return err
+	}
 
 	res, err := fn()
 	if err != nil {
