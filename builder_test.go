@@ -14,7 +14,7 @@ const (
 	TestUserName = "Dead Beaf"
 )
 
-var db = NewDb(NewConnection("postgres", "host=host.docker.internal user=postgres dbname=postgres password=postgres sslmode=disable"))
+var db = NewDb(NewConnection("postgres", "host=postgres user=postgres dbname=postgres password=postgres sslmode=disable"))
 
 var dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
 
