@@ -246,10 +246,10 @@ func TestDB_Replace(t *testing.T) {
 	db.Truncate(TestTable)
 
 	for _, obj := range rowsToReplace {
-		rows, err := db.Table(TestTable).Replace(obj.insert, obj.conflict)
+		_, err := db.Table(TestTable).Replace(obj.insert, obj.conflict)
 		assert.NoError(t, err)
 
-		rows, err = db.Table(TestTable).Replace(obj.replace, obj.conflict)
+		rows, err := db.Table(TestTable).Replace(obj.replace, obj.conflict)
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, rows, int64(1))
 
@@ -319,6 +319,7 @@ func TestDB_First(t *testing.T) {
 	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
 
 	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
+	assert.NoError(t, err)
 	assert.Equal(t, res["baz"], int64(1234))
 
 	db.Truncate(TestTable)
@@ -622,6 +623,7 @@ func TestDB_WhereRaw(t *testing.T) {
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 15").OrWhereRaw("points > 1234").Get()
+	assert.NoError(t, err)
 	assert.Equal(t, len(res), 2)
 
 	cnt, err := db.Table(UsersTable).WhereRaw("points > 123").AndWhereRaw("points < 12345").Count()
