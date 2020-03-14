@@ -627,6 +627,7 @@ func TestDB_WhereRaw(t *testing.T) {
 	assert.Equal(t, len(res), 2)
 
 	cnt, err := db.Table(UsersTable).WhereRaw("points > 123").AndWhereRaw("points < 12345").Count()
+	assert.NoError(t, err)
 	assert.Equal(t, cnt, int64(1))
 
 	db.Truncate(UsersTable)
@@ -638,6 +639,7 @@ func TestDB_Offset(t *testing.T) {
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Offset(2).Limit(10).Get()
+	assert.NoError(t, err)
 	assert.Equal(t, len(res), 2)
 
 	db.Truncate(UsersTable)
