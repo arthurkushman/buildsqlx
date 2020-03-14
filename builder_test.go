@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
-	"time"
 )
 
 const (
@@ -15,30 +14,24 @@ const (
 	TestUserName = "Dead Beaf"
 )
 
-var db = NewDb(NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
+var db = NewDb(NewConnection("postgres", "host=host.docker.internal user=postgres dbname=postgres password=postgres sslmode=disable"))
 
 var dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
 
 func TestMain(m *testing.M) {
 	_, err := db.Sql().Exec("create table if not exists users (id serial primary key, name varchar(128) not null, points integer)")
 	if err != nil {
-		// for tests running in Actions
-		time.Sleep(3 * time.Second)
-		db.Sql().Exec("create table if not exists users (id serial primary key, name varchar(128) not null, points integer)")
+		panic(err)
 	}
 
 	_, err = db.Sql().Exec("create table if not exists posts (id serial primary key, title varchar(128) not null, post text, user_id integer, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
 	if err != nil {
-		// for tests running in Actions
-		time.Sleep(3 * time.Second)
-		db.Sql().Exec("create table if not exists posts (id serial primary key, title varchar(128) not null, post text, user_id integer, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+		panic(err)
 	}
 
 	_, err = db.Sql().Exec("create table if not exists test (id serial primary key, foo varchar(128) not null, bar varchar(128) not null, baz integer)")
 	if err != nil {
-		// for tests running in Actions
-		time.Sleep(3 * time.Second)
-		db.Sql().Exec("create table if not exists test (id serial primary key, foo varchar(128) not null, bar varchar(128) not null, baz integer)")
+		panic(err)
 	}
 
 	os.Exit(m.Run())
