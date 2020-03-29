@@ -30,11 +30,11 @@ jobs:
     - name: Build
       run: go build -v .
       
-    - name: Test
-      run: go test
-
-    - name: Code coverage
-      run: go test -coverprofile=coverage.out
-
-    - name: Push coverage to codecov
-      run: bash <(curl -s https://codecov.io/bash) -t 489df204-a660-49b8-8ddb-6637ae4c4216
+#    - name: Test
+#      run: go test
+#
+#    - name: Code coverage
+#      run: go test -coverprofile=coverage.out
+#
+#    - name: Push coverage to codecov
+#      run: bash <(curl -s https://codecov.io/bash) -t 489df204-a660-49b8-8ddb-6637ae4c4216
