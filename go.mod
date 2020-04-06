@@ -1,4 +1,4 @@
-module buildsqlx
+module github.com/arthurkushman/buildsqlx
 
 go 1.12
 

@@ -40,7 +40,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"buildsqlx"
+	"github.com/arthurkushman/buildsqlx"
 ) 
 
 var db = buildsqlx.NewDb(buildsqlx.NewConnection("postgres", "user=postgres dbname=postgres password=postgres sslmode=disable"))
@@ -77,7 +77,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"buildsqlx"
+	"github.com/arthurkushman/buildsqlx"
 )
 
 func main() {
@@ -119,7 +119,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"buildsqlx"
+	"github.com/arthurkushman/buildsqlx"
 )
 
 func main() {
@@ -160,7 +160,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"buildsqlx"
+	"github.com/arthurkushman/buildsqlx"
 )
 
 func main() {
@@ -216,7 +216,7 @@ package yourpackage
 
 import (
 	_ "github.com/lib/pq"
-	"buildsqlx"
+	"github.com/arthurkushman/buildsqlx"
 )
 
 func main() {
