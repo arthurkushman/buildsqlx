@@ -1,10 +1,12 @@
 package buildsqlx
 
 import (
-	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"os"
 	"testing"
+
+	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -14,9 +16,15 @@ const (
 	TestUserName = "Dead Beaf"
 )
 
-var db = NewDb(NewConnection("postgres", "host=postgres user=postgres dbname=postgres password=postgres sslmode=disable"))
+var (
+	dbConnInfo = fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		"localhost", 5432, "postgres", "postgres", "postgres")
 
-var dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
+	dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
+
+	db = NewDb(NewConnection("postgres", dbConnInfo))
+)
 
 func TestMain(m *testing.M) {
 	_, err := db.Sql().Exec("create table if not exists users (id serial primary key, name varchar(128) not null, points integer)")
