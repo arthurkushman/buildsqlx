@@ -8,6 +8,7 @@ Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-b
 [![codecov](https://codecov.io/gh/arthurkushman/buildsqlx/branch/master/graph/badge.svg)](https://codecov.io/gh/arthurkushman/buildsqlx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+* [Installation](#user-content-installation)
 * [Selects, Ordering, Limit & Offset](#user-content-selects-ordering-limit--offset)
 * [GroupBy / Having](#user-content-groupby--having)
 * [Where, AndWhere, OrWhere clauses](#user-content-where-andwhere-orwhere-clauses)
@@ -31,6 +32,12 @@ Go Database query builder library [![Tweet](http://jpillora.com/github-twitter-b
 * [Create table](#user-content-create-table)
 * [Add / Modify / Drop columns](#user-content-add--modify--drop-columns)
 * [Chunking Results](#user-content-chunking-results)
+
+## Installation
+```bash
+go get -u github.com/arthurkushman/buildsqlx
+```
+
 ## Selects, Ordering, Limit & Offset
 
 You may not always want to select all columns from a database table. Using the select method, you can specify a custom select clause for the query:
