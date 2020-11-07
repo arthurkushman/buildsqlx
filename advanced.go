@@ -71,7 +71,7 @@ func (r *DB) Exists() (exists bool, err error) {
 	}
 
 	query := "SELECT EXISTS(SELECT 1 FROM " + builder.table + builder.buildClauses() + ")"
-	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings, true)...).Scan(&exists)
+	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&exists)
 	return
 }
 

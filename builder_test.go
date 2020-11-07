@@ -104,6 +104,20 @@ func TestInsertBatchSelectMultiple(t *testing.T) {
 	db.Truncate(TestTable)
 }
 
+func TestWhereOnly(t *testing.T) {
+	var cmp = "foo foo foo"
+
+	db.Truncate(TestTable)
+
+	err := db.Table(TestTable).InsertBatch(batchData)
+	assert.NoError(t, err)
+	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).Get()
+	assert.NoError(t, err)
+
+	assert.Equal(t, res[0]["foo"], cmp)
+	db.Truncate(TestTable)
+}
+
 func TestWhereAndOr(t *testing.T) {
 	var cmp = "foo foo foo"
 
@@ -180,8 +194,11 @@ func TestUpdate(t *testing.T) {
 
 		rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(obj.update)
 		assert.NoError(t, err)
-
 		assert.GreaterOrEqual(t, rows, int64(1))
+
+		res, err := db.Table(TestTable).Select("foo").Where("foo", "=", obj.update["foo"]).Get()
+		assert.NoError(t, err)
+		assert.Equal(t, obj.update["foo"], res[0]["foo"])
 	}
 	db.Truncate(TestTable)
 }
