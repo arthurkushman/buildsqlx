@@ -37,7 +37,7 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 		query = builder.buildSelect()
 	}
 
-	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings, true)...)
+	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,10 +80,10 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	return res, nil
 }
 
-func prepareValues(values []map[string]interface{}, where bool) []interface{} {
+func prepareValues(values []map[string]interface{}) []interface{} {
 	var vls []interface{}
 	for _, v := range values {
-		_, vals, _ := prepareBindings(v, where)
+		_, vals, _ := prepareBindings(v)
 		vls = append(vls, vals...)
 	}
 	return vls
@@ -176,7 +176,7 @@ func (r *DB) Insert(data map[string]interface{}) error {
 		return fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data, false)
+	columns, values, bindings := prepareBindings(data)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ")"
 
@@ -196,7 +196,7 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data, false)
+	columns, values, bindings := prepareBindings(data)
 
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") RETURNING id"
 
@@ -211,18 +211,18 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 }
 
 // prepareBindings prepares slices to split in favor of INSERT sql statement
-func prepareBindings(data map[string]interface{}, where bool) (columns []string, values []interface{}, bindings []string) {
+func prepareBindings(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
 	i := 1
 	for column, value := range data {
 		columns = append(columns, column)
 
 		switch v := value.(type) {
 		case string:
-			if where {
-				values = append(values, "'"+v+"'")
-			} else {
-				values = append(values, v)
-			}
+			//if where { // todo: left comments for further exploration, probably incorrect behaviour for pg driver
+			//	values = append(values, "'"+v+"'")
+			//} else {
+			values = append(values, v)
+			//}
 			break
 		case int:
 			values = append(values, strconv.FormatInt(int64(v), 10))
@@ -337,7 +337,7 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data, false)
+	columns, values, bindings := prepareBindings(data)
 	setVal := ""
 	l := len(columns)
 	for k, col := range columns {
@@ -354,7 +354,7 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 
 	r.Builder.startBindingsAt = l + 1
 	query += r.Builder.buildClauses()
-	values = append(values, prepareValues(r.Builder.whereBindings, false)...)
+	values = append(values, prepareValues(r.Builder.whereBindings)...)
 	res, err := r.Sql().Exec(query, values...)
 	if err != nil {
 		return 0, err
@@ -373,7 +373,7 @@ func (r *DB) Delete() (int64, error) {
 
 	query := "DELETE FROM " + r.Builder.table
 	query += r.Builder.buildClauses()
-	res, err := r.Sql().Exec(query, prepareValues(r.Builder.whereBindings, false)...)
+	res, err := r.Sql().Exec(query, prepareValues(r.Builder.whereBindings)...)
 	if err != nil {
 		return 0, err
 	}
@@ -387,7 +387,7 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	columns, values, bindings := prepareBindings(data, false)
+	columns, values, bindings := prepareBindings(data)
 	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") ON CONFLICT(" + conflict + ") DO UPDATE SET "
 	for i, v := range columns {
 		columns[i] = v + " = excluded." + v

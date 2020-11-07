@@ -5,7 +5,7 @@ func (r *DB) Count() (cnt int64, err error) {
 	builder := r.Builder
 	builder.columns = []string{"COUNT(*)"}
 	query := builder.buildSelect()
-	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings, true)...).Scan(&cnt)
+	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&cnt)
 	return
 }
 
@@ -14,7 +14,7 @@ func (r *DB) Avg(column string) (avg float64, err error) {
 	builder := r.Builder
 	builder.columns = []string{"AVG(" + column + ")"}
 	query := builder.buildSelect()
-	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings, true)...).Scan(&avg)
+	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&avg)
 	return
 }
 
@@ -23,7 +23,7 @@ func (r *DB) Min(column string) (min float64, err error) {
 	builder := r.Builder
 	builder.columns = []string{"MIN(" + column + ")"}
 	query := builder.buildSelect()
-	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings, true)...).Scan(&min)
+	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&min)
 	return
 }
 
@@ -32,7 +32,7 @@ func (r *DB) Max(column string) (max float64, err error) {
 	builder := r.Builder
 	builder.columns = []string{"MAX(" + column + ")"}
 	query := builder.buildSelect()
-	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings, true)...).Scan(&max)
+	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&max)
 	return
 }
 
@@ -41,6 +41,6 @@ func (r *DB) Sum(column string) (max float64, err error) {
 	builder := r.Builder
 	builder.columns = []string{"SUM(" + column + ")"}
 	query := builder.buildSelect()
-	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings, true)...).Scan(&max)
+	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&max)
 	return
 }
