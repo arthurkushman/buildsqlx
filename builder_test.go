@@ -347,6 +347,8 @@ func TestDB_First(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, res["baz"], int64(1234))
 
+	_, err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("fo", "desc").First()
+	assert.Error(t, err)
 	db.Truncate(TestTable)
 }
 
@@ -389,6 +391,9 @@ func TestDB_Value(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestUserName, res)
 
+	_, err = db.Table(UsersTable).OrderBy("poin", "desc").Value("name")
+	assert.Error(t, err)
+
 	db.Truncate(UsersTable)
 }
 
@@ -404,6 +409,9 @@ func TestDB_Pluck(t *testing.T) {
 		resVal := v.(string)
 		assert.Equal(t, batchUsers[k]["name"], resVal)
 	}
+
+	_, err = db.Table("nonexistent").Pluck("name")
+	assert.Error(t, err)
 
 	db.Truncate(UsersTable)
 }
@@ -424,6 +432,9 @@ func TestDB_PluckMap(t *testing.T) {
 			assert.Equal(t, batchUsers[k]["points"], valueVal)
 		}
 	}
+
+	_, err = db.Table("nonexistent").PluckMap("name", "points")
+	assert.Error(t, err)
 
 	db.Truncate(UsersTable)
 }
@@ -897,6 +908,19 @@ func TestDB_ChunkBuilderTableErr(t *testing.T) {
 
 	_, err = db.Exists()
 	assert.Errorf(t, err, errTableCallBeforeOp)
+
+	_, err = db.Table("nonexistent").Update(dataMap)
+	assert.Error(t, err)
+
+	_, err = db.Table("nonexistent").Delete()
+	assert.Error(t, err)
+
+	_, err = db.Table("nonexistent").Increment("clmn", 123)
+	assert.Error(t, err)
+
+	_, err = db.Table("nonexistent").Replace(dataMap, "id")
+	assert.Error(t, err)
+
 	db.Truncate(UsersTable)
 }
 
