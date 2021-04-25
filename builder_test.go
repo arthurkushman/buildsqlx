@@ -19,7 +19,7 @@ const (
 var (
 	dbConnInfo = fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		"localhost", 5432, "postgres", "postgres", "postgres")
+		"0.0.0.0", 5433, "postgres", "postgres", "postgres")
 
 	dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
 
@@ -355,13 +355,10 @@ func TestDB_First(t *testing.T) {
 func TestDB_Find(t *testing.T) {
 	db.Truncate(TestTable)
 
-	err := db.Table(TestTable).Insert(dataMap)
+	id, err := db.Table(TestTable).InsertGetId(dataMap)
 	assert.NoError(t, err)
 
-	err = db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
-	assert.NoError(t, err)
-
-	res, err := db.Table(TestTable).Find(1)
+	res, err := db.Table(TestTable).Find(id)
 	assert.NoError(t, err)
 	assert.Equal(t, res["id"], int64(1))
 

@@ -35,7 +35,7 @@ func (r *DB) Value(column string) (val interface{}, err error) {
 }
 
 // Find retrieves a single row by it's id column value
-func (r *DB) Find(id int64) (map[string]interface{}, error) {
+func (r *DB) Find(id uint64) (map[string]interface{}, error) {
 	return r.Where("id", "=", id).First()
 }
 
