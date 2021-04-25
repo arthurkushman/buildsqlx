@@ -360,7 +360,7 @@ func TestDB_Find(t *testing.T) {
 
 	res, err := db.Table(TestTable).Find(id)
 	assert.NoError(t, err)
-	assert.Equal(t, res["id"], int64(1))
+	assert.Equal(t, res["id"], int64(id))
 
 	db.Truncate(TestTable)
 }
