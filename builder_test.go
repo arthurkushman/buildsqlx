@@ -19,7 +19,7 @@ const (
 var (
 	dbConnInfo = fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		"0.0.0.0", 5433, "postgres", "postgres", "postgres")
+		"localhost", 5432, "postgres", "postgres", "postgres")
 
 	dataMap = map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)}
 
