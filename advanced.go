@@ -34,6 +34,11 @@ func (r *DB) Value(column string) (val interface{}, err error) {
 	return
 }
 
+// Find retrieves a single row by it's id column value
+func (r *DB) Find(id int64) (map[string]interface{}, error) {
+	return r.Where("id", "=", id).First()
+}
+
 // Pluck getting values of a particular column and place them into slice
 func (r *DB) Pluck(column string) (val []interface{}, err error) {
 	res, err := r.Get()
