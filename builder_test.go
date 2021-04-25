@@ -340,7 +340,7 @@ func TestDB_First(t *testing.T) {
 	err := db.Table(TestTable).Insert(dataMap)
 	assert.NoError(t, err)
 
-	// write concurrent row ot order and get the only 1st
+	// write concurrent row to order and get the only 1st
 	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
 
 	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
@@ -349,6 +349,19 @@ func TestDB_First(t *testing.T) {
 
 	_, err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("fo", "desc").First()
 	assert.Error(t, err)
+	db.Truncate(TestTable)
+}
+
+func TestDB_Find(t *testing.T) {
+	db.Truncate(TestTable)
+
+	id, err := db.Table(TestTable).InsertGetId(dataMap)
+	assert.NoError(t, err)
+
+	res, err := db.Table(TestTable).Find(id)
+	assert.NoError(t, err)
+	assert.Equal(t, res["id"], int64(id))
+
 	db.Truncate(TestTable)
 }
 
