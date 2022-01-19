@@ -151,9 +151,7 @@ func (r *DB) AndHavingRaw(raw string) *DB {
 
 // AddSelect accepts additional columns to select from a table
 func (r *DB) AddSelect(args ...string) *DB {
-	for _, arg := range args {
-		r.Builder.columns = append(r.Builder.columns, arg)
-	}
+	r.Builder.columns = append(r.Builder.columns, args...)
 	return r
 }
 
@@ -459,18 +457,14 @@ func prepareSlice(in []interface{}) (out []string) {
 		switch v := value.(type) {
 		case string:
 			out = append(out, v)
-			break
 		case int:
 			out = append(out, strconv.FormatInt(int64(v), 10))
-			break
 		case float64:
 			out = append(out, fmt.Sprintf("%g", v))
-			break
 		case int64:
 			out = append(out, strconv.FormatInt(v, 10))
 		case uint64:
 			out = append(out, strconv.FormatUint(v, 10))
-			break
 		}
 	}
 

@@ -1,8 +1,9 @@
 package buildsqlx
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const TableToCreate = "big_tbl"
@@ -65,7 +66,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.True(t, is)
 
 	// test add the column
-	res, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) {
 		table.String("title", 64)
 		table.DropIndex("idx_price")
 	})
@@ -76,13 +77,13 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.True(t, isCol)
 
 	// test modify the column
-	res, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) {
 		table.String("title", 128).Change()
 	})
 	assert.NoError(t, err)
 
 	// test drop the column
-	res, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) {
 		table.DropColumn("title")
 	})
 	assert.NoError(t, err)
