@@ -2,10 +2,11 @@ package buildsqlx
 
 import (
 	"fmt"
-	"github.com/lib/pq"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/lib/pq"
 )
 
 const (
@@ -27,7 +28,7 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 		for _, uBuilder := range builder.union {
 			query += uBuilder + " UNION "
 
-			if builder.isUnionAll == true {
+			if builder.isUnionAll {
 				query += "ALL "
 			}
 		}
@@ -223,19 +224,14 @@ func prepareBindings(data map[string]interface{}) (columns []string, values []in
 			//} else {
 			values = append(values, v)
 			//}
-			break
 		case int:
 			values = append(values, strconv.FormatInt(int64(v), 10))
-			break
 		case float64:
 			values = append(values, fmt.Sprintf("%g", v))
-			break
 		case int64:
 			values = append(values, strconv.FormatInt(v, 10))
-			break
 		case uint64:
 			values = append(values, strconv.FormatUint(v, 10))
-			break
 		}
 
 		bindings = append(bindings, "$"+strconv.FormatInt(int64(i), 10))
@@ -309,19 +305,14 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 			switch casted := value.(type) {
 			case string:
 				values[k][colToIdx[column]] = casted
-				break
 			case int:
 				values[k][colToIdx[column]] = strconv.FormatInt(int64(casted), 10)
-				break
 			case float64:
 				values[k][colToIdx[column]] = fmt.Sprintf("%g", casted)
-				break
 			case int64:
 				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
-				break
 			case uint64:
 				values[k][colToIdx[column]] = strconv.FormatUint(casted, 10)
-				break
 			}
 		}
 	}
@@ -420,22 +411,18 @@ func (r *DB) InTransaction(fn func() (interface{}, error)) error {
 		if v > 0 {
 			isOk = true
 		}
-		break
 	case uint64:
 		if v > 0 {
 			isOk = true
 		}
-		break
 	case []map[string]interface{}:
 		if len(v) > 0 {
 			isOk = true
 		}
-		break
 	case map[string]interface{}:
 		if len(v) > 0 {
 			isOk = true
 		}
-		break
 	}
 
 	if !isOk {
