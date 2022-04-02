@@ -12,6 +12,7 @@ const (
 	TypeSmallInt     = "SMALLINT"
 	TypeInt          = "INTEGER"
 	TypeBigInt       = "BIGINT"
+	TypeBoolean      = "BOOLEAN"
 	TypeText         = "TEXT"
 	TypeVarchar      = "VARCHAR"
 	TypeChar         = "CHAR"
@@ -246,6 +247,12 @@ func (t *Table) String(colNm string, len uint64) *Table {
 // Char creates char(len) column
 func (t *Table) Char(colNm string, len uint64) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, ColumnType: colType(TypeChar + "(" + strconv.FormatUint(len, 10) + ")")})
+	return t
+}
+
+// Boolean creates boolean type column
+func (t *Table) Boolean(colNm string) *Table {
+	t.columns = append(t.columns, &column{Name: colNm, ColumnType: TypeBoolean})
 	return t
 }
 
