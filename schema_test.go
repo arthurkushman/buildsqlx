@@ -1,6 +1,7 @@
 package buildsqlx
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,6 +44,12 @@ func TestDB_CreateTable(t *testing.T) {
 		return nil
 	})
 	assert.NoError(t, err)
+
+	// test some err returning from fn()
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
+		return errors.New("some err")
+	})
+	assert.Error(t, err)
 
 	// 1st drop the referencing tbl
 	_, err = db.Drop("tbl_to_ref")
