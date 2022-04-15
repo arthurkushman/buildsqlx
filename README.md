@@ -317,7 +317,7 @@ To create a new database table, use the CreateTable method.
 The Schema method accepts two arguments. 
 The first is the name of the table, while the second is an anonymous function/closure which receives a Table struct that may be used to define the new table:
 ```go
-res, err := db.Schema("big_tbl", func(table *Table) {
+res, err := db.Schema("big_tbl", func(table *Table) error {
     table.Increments("id")
     table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
     table.SmallInt("cnt").Default(1)
@@ -334,16 +334,20 @@ res, err := db.Schema("big_tbl", func(table *Table) {
     table.Jsonb("settings")
     table.Point("pt")
     table.Polygon("poly")		
-    table.TableComment("big table for big data")		
+    table.TableComment("big table for big data")	
+	
+	return nil
 })
 
 // to make a foreign key constraint from another table
-_, err = db.Schema("tbl_to_ref", func(table *Table) {
+_, err = db.Schema("tbl_to_ref", func(table *Table) error {
     table.Increments("id")
     table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id")
     // to add index on existing column just repeat stmt + index e.g.:
     table.Char("tag", 10).Index("idx_tag")
     table.Rename("settings", "options")
+
+    return nil
 })	
 ```
 
@@ -351,16 +355,20 @@ _, err = db.Schema("tbl_to_ref", func(table *Table) {
 The Table structure in the Schema's 2nd argument may be used to update existing tables. Just the way you've been created it.
 The Change method allows you to modify some existing column types to a new type or modify the column's attributes.
 ```go
-res, err := db.Schema("tbl_name", func(table *Table) {
+res, err := db.Schema("tbl_name", func(table *Table) error {
     table.String("title", 128).Change()
+
+    return nil
 })
 ```
 Use DropColumn method to remove any column:
 ```go
-res, err := db.Schema("tbl_name", func(table *Table) {
+res, err := db.Schema("tbl_name", func(table *Table) error {
     table.DropColumn("deleted_at")
     // To drop an index on the column    
     table.DropIndex("idx_title")
+
+    return nil
 })
 ```
 
