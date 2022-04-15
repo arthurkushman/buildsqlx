@@ -73,9 +73,12 @@ type column struct {
 }
 
 // Schema creates and/or manipulates table structure with an appropriate types/indices/comments/defaults/nulls etc
-func (r *DB) Schema(tblName string, fn func(table *Table)) (res sql.Result, err error) {
+func (r *DB) Schema(tblName string, fn func(table *Table) error) (res sql.Result, err error) {
 	tbl := &Table{tblName: tblName}
-	fn(tbl) // run fn with Table struct passed to collect columns to []*column slice
+	err = fn(tbl) // run fn with Table struct passed to collect columns to []*column slice
+	if err != nil {
+		return nil, err
+	}
 
 	l := len(tbl.columns)
 	if l > 0 {
@@ -90,6 +93,7 @@ func (r *DB) Schema(tblName string, fn func(table *Table)) (res sql.Result, err 
 		// create table with relative columns/indices
 		return r.createTable(tbl)
 	}
+
 	return
 }
 
