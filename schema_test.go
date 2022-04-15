@@ -1,6 +1,7 @@
 package buildsqlx
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ func TestDB_CreateTable(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
 
-	_, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.Increments("id")
 		table.String("title", 128).Default("The quick brown fox jumped over the lazy dog").Unique("idx_ttl")
 		table.Boolean("is_active")
@@ -27,6 +28,8 @@ func TestDB_CreateTable(t *testing.T) {
 		table.Point("pt")
 		table.Polygon("poly")
 		table.TableComment("big table for big data")
+
+		return nil
 	})
 	assert.NoError(t, err)
 
@@ -34,11 +37,19 @@ func TestDB_CreateTable(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
-	_, err = db.Schema("tbl_to_ref", func(table *Table) {
+	_, err = db.Schema("tbl_to_ref", func(table *Table) error {
 		table.Increments("id")
 		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", TableToCreate, "id")
+
+		return nil
 	})
 	assert.NoError(t, err)
+
+	// test some err returning from fn()
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
+		return errors.New("some err")
+	})
+	assert.Error(t, err)
 
 	// 1st drop the referencing tbl
 	_, err = db.Drop("tbl_to_ref")
@@ -52,10 +63,12 @@ func TestTable_BigIncrements(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
 
-	res, err := db.Schema(TableToCreate, func(table *Table) {
+	res, err := db.Schema(TableToCreate, func(table *Table) error {
 		table.BigIncrements("id")
 		table.Numeric("price", 4, 3).Index("idx_price")
 		table.Jsonb("taxes")
+
+		return nil
 	})
 	assert.NoError(t, err)
 
@@ -67,9 +80,11 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.True(t, is)
 
 	// test add the column
-	_, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.String("title", 64)
 		table.DropIndex("idx_price")
+
+		return nil
 	})
 	assert.NoError(t, err)
 
@@ -78,14 +93,18 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.True(t, isCol)
 
 	// test modify the column
-	_, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.String("title", 128).Change()
+
+		return nil
 	})
 	assert.NoError(t, err)
 
 	// test drop the column
-	_, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.DropColumn("title")
+
+		return nil
 	})
 	assert.NoError(t, err)
 
@@ -101,13 +120,15 @@ func TestTable_DateTime(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
 
-	_, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.Increments("id")
 		table.Json("settings")
 		table.Char("tag", 10)
 		table.Date("birthday", false)
 		table.DateTime("created_at", true)
 		table.DateTimeTz("updated_at", true)
+
+		return nil
 	})
 	assert.NoError(t, err)
 
@@ -116,9 +137,11 @@ func TestTable_DateTime(t *testing.T) {
 	assert.True(t, is)
 
 	// test modify the column
-	_, err = db.Schema(TableToCreate, func(table *Table) {
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.String("tag", 12).Index("idx_tag")
 		table.Rename("settings", "options")
+
+		return nil
 	})
 	assert.NoError(t, err)
 

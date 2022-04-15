@@ -700,8 +700,10 @@ func TestDB_Rename(t *testing.T) {
 	db.Drop(tbl)
 	db.Drop(tbl2)
 
-	_, err := db.Schema(tbl, func(table *Table) {
+	_, err := db.Schema(tbl, func(table *Table) error {
 		table.Increments("id")
+
+		return nil
 	})
 	assert.NoError(t, err)
 
