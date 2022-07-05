@@ -75,7 +75,7 @@ func (r *DB) Exists() (exists bool, err error) {
 		return false, fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	query := "SELECT EXISTS(SELECT 1 FROM " + builder.table + builder.buildClauses() + ")"
+	query := `SELECT EXISTS(SELECT 1 FROM "` + builder.table + `" ` + builder.buildClauses() + `)`
 	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&exists)
 	return
 }
@@ -106,7 +106,7 @@ func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	query := "UPDATE " + r.Builder.table + " SET " + column + " = " + column + sign + strconv.FormatUint(on, 10)
+	query := `UPDATE "` + r.Builder.table + `" SET ` + column + ` = ` + column + sign + strconv.FormatUint(on, 10)
 
 	res, err := r.Sql().Exec(query)
 	if err != nil {
