@@ -92,7 +92,7 @@ func prepareValues(values []map[string]interface{}) []interface{} {
 
 // buildSelect constructs a query for select statement
 func (r *builder) buildSelect() string {
-	query := "SELECT " + strings.Join(r.columns, ", ") + " FROM " + r.table
+	query := `SELECT ` + strings.Join(r.columns, `, `) + ` FROM "` + r.table + `"`
 
 	return query + r.buildClauses()
 }
@@ -179,7 +179,7 @@ func (r *DB) Insert(data map[string]interface{}) error {
 
 	columns, values, bindings := prepareBindings(data)
 
-	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ")"
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `)`
 
 	_, err := r.Sql().Exec(query, values...)
 
@@ -199,7 +199,7 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 
 	columns, values, bindings := prepareBindings(data)
 
-	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") RETURNING id"
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING id`
 
 	var id uint64
 	err := r.Sql().QueryRow(query, values...).Scan(&id)
@@ -338,7 +338,7 @@ func (r *DB) Update(data map[string]interface{}) (int64, error) {
 		}
 	}
 
-	query := "UPDATE " + r.Builder.table + " SET " + setVal
+	query := `UPDATE "` + r.Builder.table + `" SET ` + setVal
 	if r.Builder.from != "" {
 		query += " FROM " + r.Builder.from
 	}
@@ -362,7 +362,7 @@ func (r *DB) Delete() (int64, error) {
 		return 0, fmt.Errorf(errTableCallBeforeOp)
 	}
 
-	query := "DELETE FROM " + r.Builder.table
+	query := `DELETE FROM "` + r.Builder.table + `"`
 	query += r.Builder.buildClauses()
 	res, err := r.Sql().Exec(query, prepareValues(r.Builder.whereBindings)...)
 	if err != nil {
@@ -379,7 +379,7 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 	}
 
 	columns, values, bindings := prepareBindings(data)
-	query := "INSERT INTO " + builder.table + " (" + strings.Join(columns, ", ") + ") VALUES(" + strings.Join(bindings, ", ") + ") ON CONFLICT(" + conflict + ") DO UPDATE SET "
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) ON CONFLICT(` + conflict + `) DO UPDATE SET `
 	for i, v := range columns {
 		columns[i] = v + " = excluded." + v
 	}
