@@ -55,19 +55,19 @@ type Table struct {
 
 // collection of properties for the column
 type column struct {
-	Name         string
-	RenameTo     *string
 	IsNotNull    bool
 	IsPrimaryKey bool
-	ColumnType   colType
-	Default      *string
 	IsIndex      bool
 	IsUnique     bool
+	IsDrop       bool
+	IsModify     bool
+	Name         string
+	RenameTo     *string
+	ColumnType   colType
+	Default      *string
 	ForeignKey   *string
 	IdxName      string
 	Comment      *string
-	IsDrop       bool
-	IsModify     bool
 	Collation    *string
 	Op           string
 }
