@@ -347,7 +347,7 @@ func (r *DB) Truncate(tables string) (sql.Result, error) {
 
 // DropIfExists drops >=1 tables if they are existent
 func (r *DB) DropIfExists(tables string) (sql.Result, error) {
-	return r.Sql().Exec("DROP TABLE IF EXISTS " + tables)
+	return r.Sql().Exec("DROP TABLE" + IfExistsExp + tables)
 }
 
 // Rename renames from - to new table name

@@ -35,22 +35,31 @@ const (
 
 // specific for PostgreSQL driver
 const (
-	DefaultSchema = "public"
-	SemiColon     = ";"
-	AlterTable    = "ALTER TABLE "
-	Add           = " ADD "
-	Modify        = " ALTER "
-	Drop          = " DROP "
-	Rename        = " RENAME "
+	DefaultSchema  = "public"
+	SemiColon      = ";"
+	AlterTable     = "ALTER TABLE "
+	Add            = " ADD "
+	Modify         = " ALTER "
+	Drop           = " DROP "
+	Rename         = " RENAME "
+	IfExistsExp    = " IF EXISTS "
+	IfNotExistsExp = " IF NOT EXISTS "
+)
+
+const (
+	IfExistsUndeclared = iota
+	IfExists
+	IfNotExists
 )
 
 type colType string
 
 // Table is the type for operations on table schema
 type Table struct {
-	columns []*column
-	tblName string
-	comment *string
+	ifExists uint
+	columns  []*column
+	tblName  string
+	comment  *string
 }
 
 // collection of properties for the column
@@ -61,6 +70,7 @@ type column struct {
 	IsUnique     bool
 	IsDrop       bool
 	IsModify     bool
+	IfExists     uint
 	Name         string
 	RenameTo     *string
 	ColumnType   colType
@@ -91,6 +101,24 @@ func (r *DB) Schema(tblName string, fn func(table *Table) error) (res sql.Result
 			return r.modifyTable(tbl)
 		}
 		// create table with relative columns/indices
+		return r.createTable(tbl)
+	}
+
+	return
+}
+
+// SchemaIfNotExists creates table structure if not exists with an appropriate types/indices/comments/defaults/nulls etc
+func (r *DB) SchemaIfNotExists(tblName string, fn func(table *Table) error) (res sql.Result, err error) {
+	tbl := &Table{tblName: tblName}
+	err = fn(tbl) // run fn with Table struct passed to collect columns to []*column slice
+	if err != nil {
+		return nil, err
+	}
+
+	l := len(tbl.columns)
+	if l > 0 {
+		// create table with relative columns/indices
+		tbl.ifExists = IfNotExists
 		return r.createTable(tbl)
 	}
 
@@ -146,7 +174,7 @@ func composeDrop(tblName string, col *column) string {
 
 // concats all definition in 1 string expression
 func columnDef(tblName string, col *column, op string) (colDef string) {
-	colDef = AlterTable + tblName + op + "COLUMN " + col.Name
+	colDef = AlterTable + tblName + op + "COLUMN " + applyExistence(col.IfExists) + col.Name
 	if op == Rename {
 		return colDef + " TO " + *col.RenameTo
 	}
@@ -156,11 +184,24 @@ func columnDef(tblName string, col *column, op string) (colDef string) {
 	if op != Drop {
 		colDef += " " + string(col.ColumnType) + buildColumnOptions(col)
 	}
+
 	return
 }
 
+func applyExistence(ifExists uint) string {
+	if ifExists == IfExistsUndeclared {
+		return ""
+	}
+
+	if ifExists == IfExists {
+		return IfExistsExp
+	}
+
+	return IfNotExistsExp
+}
+
 func dropIdxDef(col *column) string {
-	return "DROP INDEX " + col.IdxName
+	return "DROP INDEX " + applyExistence(col.IfExists) + col.IdxName
 }
 
 func buildColumnOptions(col *column) (colSchema string) {
@@ -185,11 +226,11 @@ func buildColumnOptions(col *column) (colSchema string) {
 // build index for table on particular column depending on an index type
 func composeIndex(tblName string, col *column) string {
 	if col.IsIndex {
-		return "CREATE INDEX " + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+		return "CREATE INDEX " + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
 	}
 
 	if col.IsUnique {
-		return "CREATE UNIQUE INDEX " + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+		return "CREATE UNIQUE INDEX " + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
 	}
 
 	if col.ForeignKey != nil {
@@ -408,6 +449,18 @@ func (t *Table) Change() {
 	t.columns[len(t.columns)-1].IsModify = true
 }
 
+// IfNotExists add column/index if not exists
+func (t *Table) IfNotExists() *Table {
+	t.columns[len(t.columns)-1].IfExists = IfNotExists
+	return t
+}
+
+// IfExists drop column/index if exists
+func (t *Table) IfExists() *Table {
+	t.columns[len(t.columns)-1].IfExists = IfExists
+	return t
+}
+
 // Rename the column "from" to the "to"
 func (t *Table) Rename(from, to string) *Table {
 	t.columns = append(t.columns, &column{Name: from, RenameTo: &to, IsModify: true})
@@ -415,13 +468,15 @@ func (t *Table) Rename(from, to string) *Table {
 }
 
 // DropColumn the column named colNm in this table context
-func (t *Table) DropColumn(colNm string) {
+func (t *Table) DropColumn(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, IsDrop: true})
+	return t
 }
 
 // DropIndex the column named idxNm in this table context
-func (t *Table) DropIndex(idxNm string) {
+func (t *Table) DropIndex(idxNm string) *Table {
 	t.columns = append(t.columns, &column{IdxName: idxNm, IsDrop: true, IsIndex: true})
+	return t
 }
 
 // createTable create table with relative columns/indices
@@ -430,7 +485,7 @@ func (r *DB) createTable(t *Table) (res sql.Result, err error) {
 	var indices []string
 	var comments []string
 
-	query := "CREATE TABLE " + t.tblName + "("
+	query := "CREATE TABLE " + applyExistence(t.ifExists) + t.tblName + "("
 	for k, col := range t.columns {
 		query += composeColumn(col)
 		if k < l-1 {

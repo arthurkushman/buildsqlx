@@ -2,8 +2,9 @@ package buildsqlx
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq" // to prepare PostgreSQL driver
 	"log"
+
+	_ "github.com/lib/pq" // to prepare PostgreSQL driver
 )
 
 // Connection encloses DB struct
