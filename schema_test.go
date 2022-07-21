@@ -63,7 +63,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
 
-	res, err := db.Schema(TableToCreate, func(table *Table) error {
+	res, err := db.SchemaIfNotExists(TableToCreate, func(table *Table) error {
 		table.BigIncrements("id")
 		table.Numeric("price", 4, 3).Index("idx_price")
 		table.Jsonb("taxes")
@@ -79,10 +79,12 @@ func TestTable_BigIncrements(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, is)
 
-	// test add the column
+	// test add columns
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
-		table.String("title", 64)
+		// if not exists will propagate onto both column and index
+		table.String("title", 64).Index("ttl_idx_if_not_exists").IfNotExists()
 		table.DropIndex("idx_price")
+		table.IfExists().DropIndex("foo")
 
 		return nil
 	})
@@ -103,6 +105,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	// test drop the column
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.DropColumn("title")
+		table.IfExists().DropColumn("foo")
 
 		return nil
 	})
