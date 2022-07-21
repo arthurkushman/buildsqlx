@@ -364,7 +364,7 @@ res, err := db.Schema("tbl_name", func(table *Table) error {
 Use DropColumn method to remove any column:
 ```go
 res, err := db.Schema("tbl_name", func(table *Table) error {
-    table..IfExists().DropColumn("deleted_at")
+    table.DropColumn("deleted_at").IfExists()
     // To drop an index on the column    
     table.DropIndex("idx_title")
 

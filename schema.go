@@ -468,13 +468,15 @@ func (t *Table) Rename(from, to string) *Table {
 }
 
 // DropColumn the column named colNm in this table context
-func (t *Table) DropColumn(colNm string) {
+func (t *Table) DropColumn(colNm string) *Table {
 	t.columns = append(t.columns, &column{Name: colNm, IsDrop: true})
+	return t
 }
 
 // DropIndex the column named idxNm in this table context
-func (t *Table) DropIndex(idxNm string) {
+func (t *Table) DropIndex(idxNm string) *Table {
 	t.columns = append(t.columns, &column{IdxName: idxNm, IsDrop: true, IsIndex: true})
+	return t
 }
 
 // createTable create table with relative columns/indices

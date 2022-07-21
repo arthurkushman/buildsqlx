@@ -82,9 +82,9 @@ func TestTable_BigIncrements(t *testing.T) {
 	// test add columns
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		// if not exists will propagate onto both column and index
-		table.String("title", 64).Index("ttl_idx_if_not_exists").IfNotExists()
+		table.String("title", 64).IfNotExists().Index("ttl_idx_if_not_exists").IfNotExists()
 		table.DropIndex("idx_price")
-		table.IfExists().DropIndex("foo")
+		table.DropIndex("foo").IfExists()
 
 		return nil
 	})
@@ -105,7 +105,7 @@ func TestTable_BigIncrements(t *testing.T) {
 	// test drop the column
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.DropColumn("title")
-		table.IfExists().DropColumn("foo")
+		table.DropColumn("foo").IfExists()
 
 		return nil
 	})
