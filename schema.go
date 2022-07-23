@@ -3,6 +3,7 @@ package buildsqlx
 import (
 	"database/sql"
 	"strconv"
+	"strings"
 )
 
 // column types
@@ -33,7 +34,7 @@ const (
 	TypePolygon      = "POLYGON"
 )
 
-// specific for PostgreSQL driver
+// specific for PostgreSQL driver + SQL std
 const (
 	DefaultSchema  = "public"
 	SemiColon      = ";"
@@ -44,6 +45,8 @@ const (
 	Rename         = " RENAME "
 	IfExistsExp    = " IF EXISTS "
 	IfNotExistsExp = " IF NOT EXISTS "
+	Concurrently   = " CONCURRENTLY "
+	Constraint     = " CONSTRAINT "
 )
 
 const (
@@ -64,22 +67,23 @@ type Table struct {
 
 // collection of properties for the column
 type column struct {
-	IsNotNull    bool
-	IsPrimaryKey bool
-	IsIndex      bool
-	IsUnique     bool
-	IsDrop       bool
-	IsModify     bool
-	IfExists     uint
-	Name         string
-	RenameTo     *string
-	ColumnType   colType
-	Default      *string
-	ForeignKey   *string
-	IdxName      string
-	Comment      *string
-	Collation    *string
-	Op           string
+	IsNotNull       bool
+	IsPrimaryKey    bool
+	IsIndex         bool
+	IsIdxConcurrent bool
+	IsUnique        bool
+	IsDrop          bool
+	IsModify        bool
+	IfExists        uint
+	Name            string
+	RenameTo        *string
+	ColumnType      colType
+	Default         *string
+	ForeignKey      *string
+	IdxName         string
+	Comment         *string
+	Collation       *string
+	Op              string
 }
 
 // Schema creates and/or manipulates table structure with an appropriate types/indices/comments/defaults/nulls etc
@@ -226,16 +230,38 @@ func buildColumnOptions(col *column) (colSchema string) {
 // build index for table on particular column depending on an index type
 func composeIndex(tblName string, col *column) string {
 	if col.IsIndex {
-		return "CREATE INDEX " + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+		return "CREATE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
 	}
 
 	if col.IsUnique {
-		return "CREATE UNIQUE INDEX " + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+		return "CREATE UNIQUE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
 	}
 
 	if col.ForeignKey != nil {
+		if col.IsIdxConcurrent {
+			concurrentFk := *col.ForeignKey
+			words := strings.Fields(*col.ForeignKey)
+			for _, word := range words {
+				if word == Constraint {
+					word += Concurrently
+				}
+				concurrentFk += word
+			}
+
+			return concurrentFk
+		}
+
 		return *col.ForeignKey
 	}
+
+	return ""
+}
+
+func applyIdxConcurrency(isIdxConcurrent bool) string {
+	if isIdxConcurrent {
+		return Concurrently
+	}
+
 	return ""
 }
 
@@ -372,6 +398,11 @@ func (t *Table) Unique(idxName string) *Table {
 func (t *Table) ForeignKey(idxName, rfcTbl, onCol string) *Table {
 	key := AlterTable + t.tblName + " ADD CONSTRAINT " + idxName + " FOREIGN KEY (" + t.columns[len(t.columns)-1].Name + ") REFERENCES " + rfcTbl + " (" + onCol + ")"
 	t.columns[len(t.columns)-1].ForeignKey = &key
+	return t
+}
+
+func (t *Table) Concurrently() *Table {
+	t.columns[len(t.columns)-1].IsIdxConcurrent = true
 	return t
 }
 

@@ -39,7 +39,7 @@ func TestDB_CreateTable(t *testing.T) {
 
 	_, err = db.Schema("tbl_to_ref", func(table *Table) error {
 		table.Increments("id")
-		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", TableToCreate, "id")
+		table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", TableToCreate, "id").Concurrently()
 
 		return nil
 	})
@@ -65,7 +65,7 @@ func TestTable_BigIncrements(t *testing.T) {
 
 	res, err := db.SchemaIfNotExists(TableToCreate, func(table *Table) error {
 		table.BigIncrements("id")
-		table.Numeric("price", 4, 3).Index("idx_price")
+		table.Numeric("price", 4, 3).Index("idx_price").Concurrently()
 		table.Jsonb("taxes")
 
 		return nil

@@ -342,7 +342,7 @@ res, err := db.Schema("big_tbl", func(table *Table) error {
 // to make a foreign key constraint from another table
 _, err = db.Schema("tbl_to_ref", func(table *Table) error {
     table.Increments("id")
-    table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id").IfNotExists()
+    table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id").Concurrently().IfNotExists()
     // to add index on existing column just repeat stmt + index e.g.:
     table.Char("tag", 10).Index("idx_tag")
     table.Rename("settings", "options")
