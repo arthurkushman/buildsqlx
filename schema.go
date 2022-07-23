@@ -239,13 +239,14 @@ func composeIndex(tblName string, col *column) string {
 
 	if col.ForeignKey != nil {
 		if col.IsIdxConcurrent {
-			concurrentFk := *col.ForeignKey
+			concurrentFk := ""
 			words := strings.Fields(*col.ForeignKey)
 			for _, word := range words {
+				seq := " " + word + " "
 				if word == Constraint {
-					word += Concurrently
+					seq += " " + Concurrently + " "
 				}
-				concurrentFk += word
+				concurrentFk += seq
 			}
 
 			return concurrentFk
