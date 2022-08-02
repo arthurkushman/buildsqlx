@@ -141,7 +141,7 @@ func TestTable_DateTime(t *testing.T) {
 
 	// test modify the column
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
-		table.String("tag", 12).Index("idx_tag")
+		table.String("tag", 12).Index("idx_tag").Include("birthday", "created_at")
 		table.Rename("settings", "options")
 
 		return nil
