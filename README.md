@@ -344,7 +344,7 @@ _, err = db.Schema("tbl_to_ref", func(table *Table) error {
     table.Increments("id")
     table.Integer("big_tbl_id").ForeignKey("fk_idx_big_tbl_id", "big_tbl", "id").Concurrently().IfNotExists()
     // to add index on existing column just repeat stmt + index e.g.:
-    table.Char("tag", 10).Index("idx_tag")
+    table.Char("tag", 10).Index("idx_tag").Include("likes", "created_at")
     table.Rename("settings", "options")
 
     return nil

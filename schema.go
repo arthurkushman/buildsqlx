@@ -2,6 +2,7 @@ package buildsqlx
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -75,6 +76,7 @@ type column struct {
 	IsDrop          bool
 	IsModify        bool
 	IfExists        uint
+	Includes        []string
 	Name            string
 	RenameTo        *string
 	ColumnType      colType
@@ -230,11 +232,13 @@ func buildColumnOptions(col *column) (colSchema string) {
 // build index for table on particular column depending on an index type
 func composeIndex(tblName string, col *column) string {
 	if col.IsIndex {
-		return "CREATE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+		return "CREATE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) +
+			col.IdxName + " ON " + tblName + " (" + col.Name + ")" + applyIncludes(col.Includes)
 	}
 
 	if col.IsUnique {
-		return "CREATE UNIQUE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) + col.IdxName + " ON " + tblName + " (" + col.Name + ")"
+		return "CREATE UNIQUE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) +
+			col.IdxName + " ON " + tblName + " (" + col.Name + ")" + applyIncludes(col.Includes)
 	}
 
 	if col.ForeignKey != nil {
@@ -261,6 +265,23 @@ func composeIndex(tblName string, col *column) string {
 func applyIdxConcurrency(isIdxConcurrent bool) string {
 	if isIdxConcurrent {
 		return Concurrently
+	}
+
+	return ""
+}
+
+func applyIncludes(includes []string) string {
+	if len(includes) > 0 {
+		incFields := ""
+		l := len(includes)
+		for i, include := range includes {
+			incFields += include
+			if i < l-1 {
+				incFields += ", "
+			}
+		}
+
+		return fmt.Sprintf(" INCLUDE(%s)", incFields)
 	}
 
 	return ""
@@ -404,6 +425,11 @@ func (t *Table) ForeignKey(idxName, rfcTbl, onCol string) *Table {
 
 func (t *Table) Concurrently() *Table {
 	t.columns[len(t.columns)-1].IsIdxConcurrent = true
+	return t
+}
+
+func (t *Table) Include(columns ...string) *Table {
+	t.columns[len(t.columns)-1].Includes = columns
 	return t
 }
 
