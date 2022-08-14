@@ -183,7 +183,7 @@ var rowsToUpdate = []struct {
 	insert map[string]interface{}
 	update map[string]interface{}
 }{
-	{map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, map[string]interface{}{"foo": "foo changed"}},
+	{map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123}, map[string]interface{}{"foo": "foo changed", "baz": nil}},
 }
 
 func TestUpdate(t *testing.T) {
