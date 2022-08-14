@@ -232,6 +232,8 @@ func prepareBindings(data map[string]interface{}) (columns []string, values []in
 			values = append(values, strconv.FormatInt(v, 10))
 		case uint64:
 			values = append(values, strconv.FormatUint(v, 10))
+		case nil:
+			values = append(values, nil)
 		}
 
 		bindings = append(bindings, "$"+strconv.FormatInt(int64(i), 10))
