@@ -46,8 +46,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestSelectAndLimit(t *testing.T) {
-	db.Truncate(TestTable)
-	db.Table(TestTable).Insert(dataMap)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
+
+	err = db.Table(TestTable).Insert(dataMap)
+	assert.NoError(t, err)
 
 	qDb := db.Table(TestTable).Select("foo", "bar")
 	res, err := qDb.AddSelect("baz").Limit(15).Get()
@@ -59,13 +62,15 @@ func TestSelectAndLimit(t *testing.T) {
 		}
 	}
 
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 func TestInsert(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-	err := db.Table(TestTable).Insert(dataMap)
+	err = db.Table(TestTable).Insert(dataMap)
 	assert.NoError(t, err)
 
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Get()
@@ -77,7 +82,8 @@ func TestInsert(t *testing.T) {
 		}
 	}
 
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 var batchData = []map[string]interface{}{
@@ -87,9 +93,10 @@ var batchData = []map[string]interface{}{
 }
 
 func TestInsertBatchSelectMultiple(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-	err := db.Table(TestTable).InsertBatch(batchData)
+	err = db.Table(TestTable).InsertBatch(batchData)
 	assert.NoError(t, err)
 
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").OrderBy("foo", "ASC").Get()
@@ -101,35 +108,42 @@ func TestInsertBatchSelectMultiple(t *testing.T) {
 		}
 	}
 
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 func TestWhereOnly(t *testing.T) {
 	var cmp = "foo foo foo"
 
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-	err := db.Table(TestTable).InsertBatch(batchData)
+	err = db.Table(TestTable).InsertBatch(batchData)
 	assert.NoError(t, err)
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).Get()
 	assert.NoError(t, err)
 
 	assert.Equal(t, res[0]["foo"], cmp)
-	db.Truncate(TestTable)
+
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 func TestWhereAndOr(t *testing.T) {
 	var cmp = "foo foo foo"
 
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-	err := db.Table(TestTable).InsertBatch(batchData)
+	err = db.Table(TestTable).InsertBatch(batchData)
 	assert.NoError(t, err)
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
 	assert.NoError(t, err)
 
 	assert.Equal(t, res[0]["foo"], cmp)
-	db.Truncate(TestTable)
+
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 //var users = `create table users (id serial primary key, name varchar(128) not null, points integer)`
@@ -151,8 +165,11 @@ var batchPosts = []map[string]interface{}{
 }
 
 func TestJoins(t *testing.T) {
-	db.Truncate(UsersTable)
-	db.Truncate(PostsTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	_, err = db.Truncate(PostsTable)
+	assert.NoError(t, err)
 
 	var posts []map[string]interface{}
 	for _, v := range batchUsers {
@@ -164,7 +181,7 @@ func TestJoins(t *testing.T) {
 		})
 	}
 
-	err := db.Table(PostsTable).InsertBatch(posts)
+	err = db.Table(PostsTable).InsertBatch(posts)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").Get()
@@ -175,8 +192,11 @@ func TestJoins(t *testing.T) {
 		assert.Equal(t, val["user_id"], batchUsers[k]["id"])
 	}
 
-	db.Truncate(UsersTable)
-	db.Truncate(PostsTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	_, err = db.Truncate(PostsTable)
+	assert.NoError(t, err)
 }
 
 var rowsToUpdate = []struct {
@@ -187,7 +207,9 @@ var rowsToUpdate = []struct {
 }
 
 func TestUpdate(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
+
 	for _, obj := range rowsToUpdate {
 		err := db.Table(TestTable).Insert(obj.insert)
 		assert.NoError(t, err)
@@ -200,7 +222,9 @@ func TestUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, obj.update["foo"], res[0]["foo"])
 	}
-	db.Truncate(TestTable)
+
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 var rowsToDelete = []struct {
@@ -211,7 +235,8 @@ var rowsToDelete = []struct {
 }
 
 func TestDelete(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
 	for _, obj := range rowsToDelete {
 		err := db.Table(TestTable).Insert(obj.insert)
@@ -234,20 +259,23 @@ var incrDecr = []struct {
 }
 
 func TestDB_Increment_Decrement(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
 	for _, obj := range incrDecr {
-		err := db.Table(TestTable).Insert(obj.insert)
+		err = db.Table(TestTable).Insert(obj.insert)
 		assert.NoError(t, err)
 
-		db.Table(TestTable).Increment("baz", obj.incr)
+		_, err = db.Table(TestTable).Increment("baz", obj.incr)
+		assert.NoError(t, err)
 
 		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.incrRes).Get()
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(res), 1)
 		assert.Equal(t, res[0]["baz"], int64(obj.incrRes))
 
-		db.Table(TestTable).Decrement("baz", obj.decr)
+		_, err = db.Table(TestTable).Decrement("baz", obj.decr)
+		assert.NoError(t, err)
 
 		res, err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.decrRes).Get()
 		assert.NoError(t, err)
@@ -256,7 +284,8 @@ func TestDB_Increment_Decrement(t *testing.T) {
 		assert.Equal(t, res[0]["baz"], int64(obj.decrRes))
 	}
 
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 var rowsToReplace = []struct {
@@ -268,7 +297,8 @@ var rowsToReplace = []struct {
 }
 
 func TestDB_Replace(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
 	for _, obj := range rowsToReplace {
 		_, err := db.Table(TestTable).Replace(obj.insert, obj.conflict)
@@ -284,16 +314,20 @@ func TestDB_Replace(t *testing.T) {
 		assert.Equal(t, res[0]["foo"], obj.replace["foo"])
 	}
 
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 var userForUnion = map[string]interface{}{"id": int64(1), "name": "Alex Shmidt", "points": int64(123)}
 
 func TestDB_Union(t *testing.T) {
-	db.Truncate(TestTable)
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-	err := db.Table(TestTable).Insert(dataMap)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(TestTable).Insert(dataMap)
 	assert.NoError(t, err)
 	err = db.Table(UsersTable).Insert(userForUnion)
 	assert.NoError(t, err)
@@ -305,17 +339,24 @@ func TestDB_Union(t *testing.T) {
 		assert.Equal(t, v["points"], userForUnion["points"])
 	}
 
-	db.Truncate(UsersTable)
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_InTransaction(t *testing.T) {
-	err := db.InTransaction(func() (interface{}, error) {
-		db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-		err := db.Table(TestTable).Insert(dataMap)
+	defer func() {
+		_, err = db.Truncate(TestTable)
+		assert.NoError(t, err)
+	}()
 
-		db.Truncate(TestTable)
+	err = db.InTransaction(func() (interface{}, error) {
+		err = db.Table(TestTable).Insert(dataMap)
 
 		return 1, err
 	})
@@ -335,13 +376,15 @@ func TestDB_HasColumns(t *testing.T) {
 }
 
 func TestDB_First(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
-	err := db.Table(TestTable).Insert(dataMap)
+	err = db.Table(TestTable).Insert(dataMap)
 	assert.NoError(t, err)
 
 	// write concurrent row to order and get the only 1st
-	db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
+	err = db.Table(TestTable).Insert(map[string]interface{}{"foo": "foo foo foo 2", "bar": "bar bar bar 2", "baz": int64(1234)})
+	assert.NoError(t, err)
 
 	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
 	assert.NoError(t, err)
@@ -349,11 +392,14 @@ func TestDB_First(t *testing.T) {
 
 	_, err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("fo", "desc").First()
 	assert.Error(t, err)
-	db.Truncate(TestTable)
+
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Find(t *testing.T) {
-	db.Truncate(TestTable)
+	_, err := db.Truncate(TestTable)
+	assert.NoError(t, err)
 
 	id, err := db.Table(TestTable).InsertGetId(dataMap)
 	assert.NoError(t, err)
@@ -362,13 +408,15 @@ func TestDB_Find(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, res["id"], int64(id))
 
-	db.Truncate(TestTable)
+	_, err = db.Truncate(TestTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereExists(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, er := db.Table(UsersTable).Select("name").WhereExists(
@@ -377,13 +425,15 @@ func TestDB_WhereExists(t *testing.T) {
 	assert.NoError(t, er)
 	assert.Equal(t, TestUserName, res["name"])
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereNotExists(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, er := db.Table(UsersTable).Select("name").WhereNotExists(
@@ -392,13 +442,15 @@ func TestDB_WhereNotExists(t *testing.T) {
 	assert.NoError(t, er)
 	assert.Equal(t, TestUserName, res["name"])
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Value(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).OrderBy("points", "desc").Value("name")
 	assert.NoError(t, err)
@@ -407,13 +459,15 @@ func TestDB_Value(t *testing.T) {
 	_, err = db.Table(UsersTable).OrderBy("poin", "desc").Value("name")
 	assert.Error(t, err)
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Pluck(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).Pluck("name")
 	assert.NoError(t, err)
@@ -426,13 +480,15 @@ func TestDB_Pluck(t *testing.T) {
 	_, err = db.Table("nonexistent").Pluck("name")
 	assert.Error(t, err)
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_PluckMap(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 	res, err := db.Table(UsersTable).PluckMap("name", "points")
 	assert.NoError(t, err)
@@ -449,13 +505,15 @@ func TestDB_PluckMap(t *testing.T) {
 	_, err = db.Table("nonexistent").PluckMap("name", "points")
 	assert.Error(t, err)
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Exists(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	prepared := db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345))
@@ -469,26 +527,31 @@ func TestDB_Exists(t *testing.T) {
 	assert.True(t, exists, "The record must exist at this state of db data")
 	assert.False(t, doesntEx, "The record must exist at this state of db data")
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Count(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	cnt, err := db.Table(UsersTable).Count()
 	assert.NoError(t, err)
 
 	assert.Equalf(t, int64(len(batchUsers)), cnt, "want: %d, got: %d", len(batchUsers), cnt)
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Avg(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	avg, err := db.Table(UsersTable).Avg("points")
@@ -500,13 +563,16 @@ func TestDB_Avg(t *testing.T) {
 	}
 
 	assert.Equalf(t, cntBatch, avg, "want: %d, got: %d", cntBatch, avg)
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_MinMax(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	mn, err := db.Table(UsersTable).Min("points")
@@ -529,13 +595,16 @@ func TestDB_MinMax(t *testing.T) {
 
 	assert.Equalf(t, mn, min, "want: %d, got: %d", mn, min)
 	assert.Equalf(t, mx, max, "want: %d, got: %d", mx, max)
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Sum(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	sum, err := db.Table(UsersTable).Sum("points")
@@ -547,40 +616,49 @@ func TestDB_Sum(t *testing.T) {
 	}
 
 	assert.Equalf(t, cntBatch, sum, "want: %d, got: %d", cntBatch, sum)
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_GroupByHaving(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("points").GroupBy("points").Having("points", ">=", 123).Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers)-1)
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_HavingRaw(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("points").GroupBy("points").HavingRaw("points > 123").AndHavingRaw("points < 12345").OrHavingRaw("points = 0").Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(batchUsers)-3, len(res))
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_AllJoins(t *testing.T) {
-	db.Truncate(PostsTable)
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(PostsTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	err = db.Table(PostsTable).InsertBatch(batchPosts)
@@ -612,14 +690,18 @@ func TestDB_AllJoins(t *testing.T) {
 
 	assert.Equal(t, len(res), len(batchUsers)+1)
 
-	db.Truncate(PostsTable)
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(PostsTable)
+	assert.NoError(t, err)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_OrderByRaw(t *testing.T) {
-	db.Truncate(PostsTable)
+	_, err := db.Truncate(PostsTable)
+	assert.NoError(t, err)
 
-	err := db.Table(PostsTable).InsertBatch(batchPosts)
+	err = db.Table(PostsTable).InsertBatch(batchPosts)
 	assert.NoError(t, err)
 
 	res, err := db.Table(PostsTable).Select("title").OrderByRaw("updated_at - created_at DESC").First()
@@ -627,13 +709,15 @@ func TestDB_OrderByRaw(t *testing.T) {
 
 	assert.Equal(t, batchPosts[2]["title"], res["title"])
 
-	db.Truncate(PostsTable)
+	_, err = db.Truncate(PostsTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_SelectRaw(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).SelectRaw("SUM(points) as pts").First()
@@ -644,13 +728,16 @@ func TestDB_SelectRaw(t *testing.T) {
 		sum += v["points"].(int64)
 	}
 	assert.Equal(t, sum, res["pts"])
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_AndWhereBetween(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).OrWhereBetween("points", 123456, 67891023).AndWhereNotBetween("points", 12, 23).First()
@@ -663,12 +750,15 @@ func TestDB_AndWhereBetween(t *testing.T) {
 
 	assert.Equal(t, "Alex Shmidt", res["name"])
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereRaw(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 15").OrWhereRaw("points > 1234").Get()
@@ -679,28 +769,32 @@ func TestDB_WhereRaw(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, cnt, int64(1))
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Offset(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Offset(2).Limit(10).Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), 2)
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Rename(t *testing.T) {
 	tbl := "tbl1"
 	tbl2 := "tbl2"
-	db.Drop(tbl)
-	db.Drop(tbl2)
+	_, err := db.DropIfExists(tbl, tbl2)
+	assert.NoError(t, err)
 
-	_, err := db.Schema(tbl, func(table *Table) error {
+	_, err = db.Schema(tbl, func(table *Table) error {
 		table.Increments("id")
 
 		return nil
@@ -713,11 +807,15 @@ func TestDB_Rename(t *testing.T) {
 	exists, err := db.HasTable("public", tbl2)
 	assert.NoError(t, err)
 	assert.True(t, exists)
+
+	_, err = db.Drop(tbl2)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereIn(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("id", []int64{1, 2}).Get()
@@ -727,12 +825,15 @@ func TestDB_WhereIn(t *testing.T) {
 	res, err = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).AndWhereIn("id", []int64{1, 2}).Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), 2)
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereNotIn(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).OrWhereNotIn("id", []int64{1, 2}).Get()
@@ -742,12 +843,15 @@ func TestDB_WhereNotIn(t *testing.T) {
 	res, err = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).AndWhereNotIn("id", []int64{1, 2}).Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), 2)
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereNull(t *testing.T) {
-	db.Truncate(PostsTable)
-	err := db.Table(PostsTable).InsertBatch(batchPosts)
+	_, err := db.Truncate(PostsTable)
+	assert.NoError(t, err)
+
+	err = db.Table(PostsTable).InsertBatch(batchPosts)
 	assert.NoError(t, err)
 
 	res, err := db.Table(PostsTable).Select("title").WhereNull("post").AndWhereNull("user_id").Get()
@@ -758,12 +862,16 @@ func TestDB_WhereNull(t *testing.T) {
 	res, err = db.Table(PostsTable).Select("title").WhereNull("post").OrWhereNull("user_id").Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), 1)
-	db.Truncate(PostsTable)
+
+	_, err = db.Truncate(PostsTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_WhereNotNull(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").WhereNotNull("points").AndWhereNotNull("name").Get()
@@ -773,45 +881,61 @@ func TestDB_WhereNotNull(t *testing.T) {
 	res, err = db.Table(UsersTable).Select("name").WhereNotNull("points").OrWhereNotNull("name").Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_LockForUpdate(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").LockForUpdate().Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_UnionAll(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").UnionAll().Table(UsersTable).Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_FullOuterJoin(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	res, err := db.Table(UsersTable).Select("name").FullOuterJoin(PostsTable, "users.id", "=", "posts.user_id").Get()
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_Chunk(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 	var sumOfPoints int64
 	err = db.Table(UsersTable).Select("name", "points").Chunk(2, func(users []map[string]interface{}) bool {
@@ -831,12 +955,16 @@ func TestDB_Chunk(t *testing.T) {
 		}
 	}
 	assert.Equal(t, sumOfPoints, initialSum)
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_ChunkFalse(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 	var sumOfPoints int64
 	err = db.Table(UsersTable).Select("name", "points").Chunk(2, func(users []map[string]interface{}) bool {
@@ -853,12 +981,16 @@ func TestDB_ChunkFalse(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, sumOfPoints, batchUsers[0]["points"].(int64))
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_ChunkLessThenAmount(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	var sumOfPoints int64
@@ -872,12 +1004,16 @@ func TestDB_ChunkLessThenAmount(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Greater(t, sumOfPoints, int64(0))
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_ChunkLessThenZeroErr(t *testing.T) {
-	db.Truncate(UsersTable)
-	err := db.Table(UsersTable).InsertBatch(batchUsers)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
 	var sumOfPoints int64
@@ -890,39 +1026,42 @@ func TestDB_ChunkLessThenZeroErr(t *testing.T) {
 		return true
 	})
 	assert.Errorf(t, err, "chunk can't be <= 0, your chunk is: -1")
-	db.Truncate(UsersTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_ChunkBuilderTableErr(t *testing.T) {
-	db.Truncate(UsersTable)
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
 	// reset prev set up table as we don't want to use Table to produce err
 	db.Builder.table = ""
-	err := db.InsertBatch(batchUsers)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	err = db.InsertBatch(batchUsers)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Select("foo", "bar", "baz").Get()
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	err = db.Insert(dataMap)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.InsertGetId(dataMap)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Update(dataMap)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Delete()
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Replace(dataMap, "id")
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Increment("clmn", 123)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Exists()
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Table("nonexistent").Update(dataMap)
 	assert.Error(t, err)
@@ -936,12 +1075,17 @@ func TestDB_ChunkBuilderTableErr(t *testing.T) {
 	_, err = db.Table("nonexistent").Replace(dataMap, "id")
 	assert.Error(t, err)
 
-	db.Truncate(UsersTable)
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
 
 func TestDB_FirsNoRecordsErr(t *testing.T) {
-	db.Truncate(TestTable)
-	_, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
+	_, err := db.Truncate(UsersTable)
+	assert.NoError(t, err)
+
+	_, err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
 	assert.Errorf(t, err, "no records were produced by query: %s")
-	db.Truncate(TestTable)
+
+	_, err = db.Truncate(UsersTable)
+	assert.NoError(t, err)
 }
