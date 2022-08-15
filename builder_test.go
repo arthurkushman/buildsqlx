@@ -898,31 +898,31 @@ func TestDB_ChunkBuilderTableErr(t *testing.T) {
 	// reset prev set up table as we don't want to use Table to produce err
 	db.Builder.table = ""
 	err := db.InsertBatch(batchUsers)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Select("foo", "bar", "baz").Get()
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	err = db.Insert(dataMap)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.InsertGetId(dataMap)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Update(dataMap)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Delete()
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Replace(dataMap, "id")
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Increment("clmn", 123)
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Exists()
-	assert.Errorf(t, err, errTableCallBeforeOp)
+	assert.Error(t, err, errTableCallBeforeOp)
 
 	_, err = db.Table("nonexistent").Update(dataMap)
 	assert.Error(t, err)

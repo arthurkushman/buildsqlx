@@ -72,7 +72,7 @@ func (r *DB) PluckMap(colKey, colValue string) (val []map[interface{}]interface{
 func (r *DB) Exists() (exists bool, err error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return false, fmt.Errorf(errTableCallBeforeOp)
+		return false, errTableCallBeforeOp
 	}
 
 	query := `SELECT EXISTS(SELECT 1 FROM "` + builder.table + `" ` + builder.buildClauses() + `)`
@@ -103,7 +103,7 @@ func (r *DB) Decrement(column string, on uint64) (int64, error) {
 func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
-		return 0, fmt.Errorf(errTableCallBeforeOp)
+		return 0, errTableCallBeforeOp
 	}
 
 	query := `UPDATE "` + r.Builder.table + `" SET ` + column + ` = ` + column + sign + strconv.FormatUint(on, 10)
