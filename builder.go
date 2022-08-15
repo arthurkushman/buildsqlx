@@ -349,10 +349,6 @@ func (r *DB) Truncate(tables string) (sql.Result, error) {
 func (r *DB) DropIfExists(tables ...string) (res sql.Result, err error) {
 	for _, tbl := range tables {
 		res, err = r.Sql().Exec("DROP TABLE" + IfExistsExp + tbl)
-
-		if err != nil {
-			return res, err
-		}
 	}
 
 	return res, err
