@@ -9,6 +9,15 @@ import (
 
 const TableToCreate = "big_tbl"
 
+func TestDB_CreateEmptyTable(t *testing.T) {
+	_, err := db.DropIfExists(TableToCreate)
+	assert.NoError(t, err)
+
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
+		return nil
+	})
+}
+
 func TestDB_CreateTable(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
