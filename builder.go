@@ -86,12 +86,14 @@ func (r *DB) reset() {
 	r.Builder.limit = 0
 	r.Builder.join = []string{}
 	r.Builder.from = ""
-	r.Builder.union = []string{}
-	r.Builder.isUnionAll = false
 	r.Builder.lockForUpdate = nil
 	r.Builder.whereExists = ""
 	r.Builder.orderByRaw = nil
 	r.Builder.startBindingsAt = 1
+
+	if len(r.Builder.union) == 0 {
+		r.Builder.union = []string{}
+	}
 }
 
 // Select accepts columns to select from a table

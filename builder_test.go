@@ -1,6 +1,7 @@
 package buildsqlx
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -336,7 +337,7 @@ func TestDB_Union(t *testing.T) {
 	res, err := union.Table(UsersTable).Select("name", "points").Get()
 	assert.NoError(t, err)
 	for _, v := range res {
-		assert.Equal(t, v["points"], userForUnion["points"])
+		assert.Equal(t, v["baz"], userForUnion["points"])
 	}
 
 	_, err = db.Truncate(TestTable)
@@ -347,6 +348,78 @@ func TestDB_Union(t *testing.T) {
 }
 
 func TestDB_InTransaction(t *testing.T) {
+	var tests = map[string]struct {
+		dataMap map[string]interface{}
+		res     interface{}
+		err     error
+	}{
+		"transaction commit ok": {
+			dataMap: dataMap,
+			res:     1,
+			err:     nil,
+		},
+		"transaction commit ok int64": {
+			dataMap: dataMap,
+			res:     int64(1),
+			err:     nil,
+		},
+		"transaction commit ok uint64": {
+			dataMap: dataMap,
+			res:     uint64(1),
+			err:     nil,
+		},
+		"transaction commit ok map[string]interface{}": {
+			dataMap: dataMap,
+			res:     map[string]interface{}{"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)},
+			err:     nil,
+		},
+		"transaction commit ok []map[string]interface{}": {
+			dataMap: dataMap,
+			res: []map[string]interface{}{
+				{
+					"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123),
+				},
+			},
+			err: nil,
+		},
+		"transaction early exit err": {
+			dataMap: dataMap,
+			res:     0,
+			err:     errors.New("some error"),
+		},
+		"transaction rollback": {
+			dataMap: dataMap,
+			res:     0,
+			err:     nil,
+		},
+	}
+
+	for n, tt := range tests {
+		t.Run(n, func(t *testing.T) {
+			_, err := db.Truncate(TestTable)
+			assert.NoError(t, err)
+
+			defer func() {
+				_, err = db.Truncate(TestTable)
+				assert.NoError(t, err)
+			}()
+
+			err = db.InTransaction(func() (interface{}, error) {
+				err = db.Table(TestTable).Insert(tt.dataMap)
+
+				return tt.res, tt.err
+			})
+
+			if tt.err != nil {
+				assert.Error(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDB_InTransactionErr(t *testing.T) {
 	_, err := db.Truncate(TestTable)
 	assert.NoError(t, err)
 
@@ -358,9 +431,9 @@ func TestDB_InTransaction(t *testing.T) {
 	err = db.InTransaction(func() (interface{}, error) {
 		err = db.Table(TestTable).Insert(dataMap)
 
-		return 1, err
+		return 0, errors.New("some err")
 	})
-	assert.NoError(t, err)
+	assert.Error(t, err, errors.New("some err"))
 }
 
 func TestDB_HasTable(t *testing.T) {
@@ -908,9 +981,9 @@ func TestDB_UnionAll(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	assert.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").UnionAll().Table(UsersTable).Get()
+	res, err := db.Table(UsersTable).Select("name").UnionAll().Table(UsersTable).Select("name").Get()
 	assert.NoError(t, err)
-	assert.Equal(t, len(res), len(batchUsers))
+	assert.Equal(t, len(res), len(batchUsers)*2)
 
 	_, err = db.Truncate(UsersTable)
 	assert.NoError(t, err)

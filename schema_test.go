@@ -9,6 +9,15 @@ import (
 
 const TableToCreate = "big_tbl"
 
+func TestDB_CreateEmptyTable(t *testing.T) {
+	_, err := db.DropIfExists(TableToCreate)
+	assert.NoError(t, err)
+
+	_, err = db.Schema(TableToCreate, func(table *Table) error {
+		return nil
+	})
+}
+
 func TestDB_CreateTable(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
 	assert.NoError(t, err)
@@ -128,6 +137,7 @@ func TestTable_DateTime(t *testing.T) {
 		table.Json("settings")
 		table.Char("tag", 10)
 		table.Date("birthday", false)
+		table.Time("celebration_time", false)
 		table.DateTime("created_at", true)
 		table.DateTimeTz("updated_at", true)
 
