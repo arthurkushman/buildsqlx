@@ -128,6 +128,7 @@ func TestTable_DateTime(t *testing.T) {
 		table.Json("settings")
 		table.Char("tag", 10)
 		table.Date("birthday", false)
+		table.Time("celebration_time", false)
 		table.DateTime("created_at", true)
 		table.DateTimeTz("updated_at", true)
 

@@ -37,6 +37,9 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 		}
 
 		query += builder.buildSelect()
+		// clean union (all) after ensuring selects are built
+		r.Builder.union = []string{}
+		r.Builder.isUnionAll = false
 	} else { // std builder
 		query = builder.buildSelect()
 	}
@@ -407,11 +410,19 @@ func (r *DB) InTransaction(fn func() (interface{}, error)) error {
 
 	res, err := fn()
 	if err != nil {
+		errTxn := txn.Rollback()
+		if errTxn != nil {
+			return err
+		}
 		return err
 	}
 
 	isOk := false
 	switch v := res.(type) {
+	case int:
+		if v > 0 {
+			isOk = true
+		}
 	case int64:
 		if v > 0 {
 			isOk = true
