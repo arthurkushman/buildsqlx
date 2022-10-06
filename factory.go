@@ -412,7 +412,7 @@ func (r *DB) InTransaction(fn func() (interface{}, error)) error {
 	if err != nil {
 		errTxn := txn.Rollback()
 		if errTxn != nil {
-			return err
+			return errTxn
 		}
 		return err
 	}
