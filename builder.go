@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -243,10 +242,9 @@ func (r *DB) OrWhere(operand, operator string, val interface{}) *DB {
 
 func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
 	if prefix != "" {
-		r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{" " + prefix + " " + operand + " " + operator: val})
-	} else {
-		r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{operand + " " + operator: val})
+		prefix =" " + prefix + " "
 	}
+	r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{prefix + operand + " " + operator: val})
 	return r
 }
 
@@ -367,7 +365,7 @@ func (r *DB) WhereIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where = where + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.buildWhere("", field, "IN", ins)
 	return r
 }
 
@@ -377,7 +375,7 @@ func (r *DB) WhereNotIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where = where + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.buildWhere("", field, "NOT IN", ins)
 	return r
 }
 
@@ -387,7 +385,7 @@ func (r *DB) OrWhereIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where += or + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.buildWhere("OR", field, "IN", ins)
 	return r
 }
 
@@ -397,7 +395,7 @@ func (r *DB) OrWhereNotIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where += or + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.buildWhere("OR", field, "NOT IN", ins)
 	return r
 }
 
@@ -407,7 +405,8 @@ func (r *DB) AndWhereIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where += and + field + " IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.buildWhere("AND", field, "IN", ins)
+	// r.buildWhere("AND", field, "IN", prepareSlice(ins))
 	return r
 }
 
@@ -417,7 +416,7 @@ func (r *DB) AndWhereNotIn(field string, in interface{}) *DB {
 	if err != nil {
 		return nil
 	}
-	r.Builder.where += and + field + " NOT IN (" + strings.Join(prepareSlice(ins), ", ") + ")"
+	r.buildWhere("AND", field, "NOT IN", ins)
 	return r
 }
 
