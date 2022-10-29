@@ -147,10 +147,20 @@ func composeWhere(whereBindings []map[string]interface{}, startedAt int) string 
 	where := " WHERE "
 	i := startedAt
 	for _, m := range whereBindings {
-		for k := range m {
+		for k, v := range m {
 			// operand >= $i
-			where += k + " $" + strconv.Itoa(i)
-			i++
+			switch vi := v.(type) {
+			case []interface{}:
+				placeholders := make([]string, 0, len(vi))
+				for range vi {
+					placeholders = append(placeholders, "$" + strconv.Itoa(i))
+					i++
+				}
+				where += k + " (" + strings.Join(placeholders, ", ") + ")"
+			default:
+				where += k + " $" + strconv.Itoa(i)
+				i++
+			}
 		}
 	}
 	return where
@@ -217,33 +227,50 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 	return id, nil
 }
 
+func prepareValue(value interface{}) []interface{} {
+	values := []interface{}{}
+	switch v := value.(type) {
+	case string:
+		//if where { // todo: left comments for further exploration, probably incorrect behaviour for pg driver
+		//	values = append(values, "'"+v+"'")
+		//} else {
+		values = append(values, v)
+		//}
+	case int:
+		values = append(values, strconv.FormatInt(int64(v), 10))
+	case float64:
+		values = append(values, fmt.Sprintf("%g", v))
+	case int64:
+		values = append(values, strconv.FormatInt(v, 10))
+	case uint64:
+		values = append(values, strconv.FormatUint(v, 10))
+	case []interface{}:
+		for _, vi := range v {
+			values = append(values, prepareValue(vi)...)
+		}
+	case nil:
+		values = append(values, nil)
+	}
+
+	return values
+}
+
 // prepareBindings prepares slices to split in favor of INSERT sql statement
 func prepareBindings(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
 	i := 1
 	for column, value := range data {
 		columns = append(columns, column)
 
-		switch v := value.(type) {
-		case string:
-			//if where { // todo: left comments for further exploration, probably incorrect behaviour for pg driver
-			//	values = append(values, "'"+v+"'")
-			//} else {
-			values = append(values, v)
-			//}
-		case int:
-			values = append(values, strconv.FormatInt(int64(v), 10))
-		case float64:
-			values = append(values, fmt.Sprintf("%g", v))
-		case int64:
-			values = append(values, strconv.FormatInt(v, 10))
-		case uint64:
-			values = append(values, strconv.FormatUint(v, 10))
-		case nil:
-			values = append(values, nil)
-		}
+		pValues := prepareValue(value)
 
-		bindings = append(bindings, "$"+strconv.FormatInt(int64(i), 10))
-		i++
+		if len(pValues) > 0 {
+			values = append(values, pValues...)
+
+			for range pValues {
+				bindings = append(bindings, "$"+strconv.FormatInt(int64(i), 10))
+				i++
+			}
+		}
 	}
 
 	return
