@@ -153,11 +153,16 @@ func composeWhere(whereBindings []map[string]interface{}, startedAt int) string 
 			case []interface{}:
 				placeholders := make([]string, 0, len(vi))
 				for range vi {
-					placeholders = append(placeholders, "$" + strconv.Itoa(i))
+					placeholders = append(placeholders, "$"+strconv.Itoa(i))
 					i++
 				}
 				where += k + " (" + strings.Join(placeholders, ", ") + ")"
 			default:
+				if strings.Contains(k, sqlOperatorIs) || strings.Contains(k, sqlOperatorBetween) {
+					where += k + " " + vi.(string)
+					break
+				}
+
 				where += k + " $" + strconv.Itoa(i)
 				i++
 			}
@@ -259,10 +264,12 @@ func prepareValue(value interface{}) []interface{} {
 func prepareBindings(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
 	i := 1
 	for column, value := range data {
+		if strings.Contains(column, sqlOperatorIs) || strings.Contains(column, sqlOperatorBetween) {
+			continue
+		}
+
 		columns = append(columns, column)
-
 		pValues := prepareValue(value)
-
 		if len(pValues) > 0 {
 			values = append(values, pValues...)
 

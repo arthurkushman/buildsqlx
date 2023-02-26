@@ -955,6 +955,11 @@ func TestDB_WhereNotNull(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(res), len(batchUsers))
 
+	res, err = db.Table(UsersTable).Select("name").Where("id", "=", 1).
+		OrWhere("id", "=", 2).AndWhereNotNull("points").Get()
+	assert.NoError(t, err)
+	assert.Equal(t, len(res), 2)
+
 	_, err = db.Truncate(UsersTable)
 	assert.NoError(t, err)
 }
