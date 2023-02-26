@@ -20,6 +20,19 @@ const (
 	or            = " OR "
 )
 
+const (
+	sqlOperatorBetween    = "BETWEEN"
+	sqlOperatorNotBetween = "NOT BETWEEN"
+	sqlOperatorIs         = "IS"
+	sqlOperatorAnd        = "AND"
+	sqlOperatorOr         = "OR"
+)
+
+const (
+	sqlSpecificValueNull    = "NULL"
+	sqlSpecificValueNotNull = "NOT NULL"
+)
+
 // inner type to build qualified sql
 type builder struct {
 	whereBindings   []map[string]interface{}
@@ -242,7 +255,7 @@ func (r *DB) OrWhere(operand, operator string, val interface{}) *DB {
 
 func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
 	if prefix != "" {
-		prefix =" " + prefix + " "
+		prefix = " " + prefix + " "
 	}
 	r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{prefix + operand + " " + operator: val})
 	return r
@@ -250,38 +263,32 @@ func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
 
 // WhereBetween sets the clause BETWEEN 2 values
 func (r *DB) WhereBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where = where + col + " BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
-	return r
+	return r.buildWhere("", col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // OrWhereBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += or + col + " BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
-	return r
+	return r.buildWhere(sqlOperatorOr, col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // AndWhereBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += and + col + " BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
-	return r
+	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // WhereNotBetween sets the clause NOT BETWEEN 2 values
 func (r *DB) WhereNotBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where = where + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
-	return r
+	return r.buildWhere("", col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // OrWhereNotBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereNotBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += or + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
-	return r
+	return r.buildWhere(sqlOperatorOr, col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // AndWhereNotBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereNotBetween(col string, val1, val2 interface{}) *DB {
-	r.Builder.where += and + col + " NOT BETWEEN " + convertToStr(val1) + and + convertToStr(val2)
-	return r
+	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 func convertToStr(val interface{}) string {
@@ -330,10 +337,6 @@ func (r *DB) Limit(lim int64) *DB {
 	r.Builder.limit = lim
 	return r
 }
-
-//func Create(table string, closure func()) {
-//
-//}
 
 // Drop drops >=1 tables
 func (r *DB) Drop(tables string) (sql.Result, error) {
@@ -422,38 +425,32 @@ func (r *DB) AndWhereNotIn(field string, in interface{}) *DB {
 
 // WhereNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) WhereNull(field string) *DB {
-	r.Builder.where = where + field + " IS NULL"
-	return r
+	return r.buildWhere("", field, sqlOperatorIs, sqlSpecificValueNull)
 }
 
 // WhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) WhereNotNull(field string) *DB {
-	r.Builder.where = where + field + " IS NOT NULL"
-	return r
+	return r.buildWhere("", field, sqlOperatorIs, sqlSpecificValueNotNull)
 }
 
 // OrWhereNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) OrWhereNull(field string) *DB {
-	r.Builder.where += or + field + " IS NULL"
-	return r
+	return r.buildWhere(sqlOperatorOr, field, sqlOperatorIs, sqlSpecificValueNull)
 }
 
 // OrWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) OrWhereNotNull(field string) *DB {
-	r.Builder.where += or + field + " IS NOT NULL"
-	return r
+	return r.buildWhere(sqlOperatorOr, field, sqlOperatorIs, sqlSpecificValueNotNull)
 }
 
 // AndWhereNull appends fieldName IS NULL stmt to WHERE clause
 func (r *DB) AndWhereNull(field string) *DB {
-	r.Builder.where += and + field + " IS NULL"
-	return r
+	return r.buildWhere(sqlOperatorAnd, field, sqlOperatorIs, sqlSpecificValueNull)
 }
 
 // AndWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) AndWhereNotNull(field string) *DB {
-	r.Builder.where += and + field + " IS NOT NULL"
-	return r
+	return r.buildWhere(sqlOperatorAnd, field, sqlOperatorIs, sqlSpecificValueNotNull)
 }
 
 // prepares slice for Where bindings, IN/NOT IN etc
