@@ -21,3 +21,8 @@ func NewConnection(driverName, dataSourceName string) *Connection {
 
 	return &Connection{db: db}
 }
+
+// NewConnectionFromDb returns re-defined Connection structure created via db handle with connection(s)
+func NewConnectionFromDb(db *sql.DB) *Connection {
+	return &Connection{db: db}
+}
