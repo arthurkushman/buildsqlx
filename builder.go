@@ -35,7 +35,7 @@ const (
 
 // inner type to build qualified sql
 type builder struct {
-	whereBindings   []map[string]interface{}
+	whereBindings   []map[string]any
 	startBindingsAt int
 	where           string
 	table           string
@@ -90,7 +90,7 @@ func (r *DB) reset() {
 	r.Builder.table = ""
 	r.Builder.columns = []string{"*"}
 	r.Builder.where = ""
-	r.Builder.whereBindings = make([]map[string]interface{}, 0)
+	r.Builder.whereBindings = make([]map[string]any, 0)
 	r.Builder.groupBy = ""
 	r.Builder.having = ""
 	r.Builder.orderBy = make([]map[string]string, 0)
@@ -140,7 +140,7 @@ func (r *DB) GroupBy(expr string) *DB {
 }
 
 // Having similar to Where but used with GroupBy to apply over the grouped results
-func (r *DB) Having(operand, operator string, val interface{}) *DB {
+func (r *DB) Having(operand, operator string, val any) *DB {
 	r.Builder.having = operand + " " + operator + " " + convertToStr(val)
 	return r
 }
@@ -237,61 +237,61 @@ func (r *DB) buildJoin(joinType, table, on string) *DB {
 }
 
 // Where accepts left operand-operator-right operand to apply them to where clause
-func (r *DB) Where(operand, operator string, val interface{}) *DB {
+func (r *DB) Where(operand, operator string, val any) *DB {
 	return r.buildWhere("", operand, operator, val)
 }
 
 // AndWhere accepts left operand-operator-right operand to apply them to where clause
 // with AND logical operator
-func (r *DB) AndWhere(operand, operator string, val interface{}) *DB {
+func (r *DB) AndWhere(operand, operator string, val any) *DB {
 	return r.buildWhere("AND", operand, operator, val)
 }
 
 // OrWhere accepts left operand-operator-right operand to apply them to where clause
 // with OR logical operator
-func (r *DB) OrWhere(operand, operator string, val interface{}) *DB {
+func (r *DB) OrWhere(operand, operator string, val any) *DB {
 	return r.buildWhere("OR", operand, operator, val)
 }
 
-func (r *DB) buildWhere(prefix, operand, operator string, val interface{}) *DB {
+func (r *DB) buildWhere(prefix, operand, operator string, val any) *DB {
 	if prefix != "" {
 		prefix = " " + prefix + " "
 	}
-	r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]interface{}{prefix + operand + " " + operator: val})
+	r.Builder.whereBindings = append(r.Builder.whereBindings, map[string]any{prefix + operand + " " + operator: val})
 	return r
 }
 
 // WhereBetween sets the clause BETWEEN 2 values
-func (r *DB) WhereBetween(col string, val1, val2 interface{}) *DB {
+func (r *DB) WhereBetween(col string, val1, val2 any) *DB {
 	return r.buildWhere("", col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // OrWhereBetween sets the clause OR BETWEEN 2 values
-func (r *DB) OrWhereBetween(col string, val1, val2 interface{}) *DB {
+func (r *DB) OrWhereBetween(col string, val1, val2 any) *DB {
 	return r.buildWhere(sqlOperatorOr, col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // AndWhereBetween sets the clause AND BETWEEN 2 values
-func (r *DB) AndWhereBetween(col string, val1, val2 interface{}) *DB {
+func (r *DB) AndWhereBetween(col string, val1, val2 any) *DB {
 	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // WhereNotBetween sets the clause NOT BETWEEN 2 values
-func (r *DB) WhereNotBetween(col string, val1, val2 interface{}) *DB {
+func (r *DB) WhereNotBetween(col string, val1, val2 any) *DB {
 	return r.buildWhere("", col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // OrWhereNotBetween sets the clause OR BETWEEN 2 values
-func (r *DB) OrWhereNotBetween(col string, val1, val2 interface{}) *DB {
+func (r *DB) OrWhereNotBetween(col string, val1, val2 any) *DB {
 	return r.buildWhere(sqlOperatorOr, col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
 // AndWhereNotBetween sets the clause AND BETWEEN 2 values
-func (r *DB) AndWhereNotBetween(col string, val1, val2 interface{}) *DB {
+func (r *DB) AndWhereNotBetween(col string, val1, val2 any) *DB {
 	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
 }
 
-func convertToStr(val interface{}) string {
+func convertToStr(val any) string {
 	switch v := val.(type) {
 	case string:
 		return "'" + v + "'"
@@ -363,7 +363,7 @@ func (r *DB) Rename(from, to string) (sql.Result, error) {
 }
 
 // WhereIn appends IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) WhereIn(field string, in interface{}) *DB {
+func (r *DB) WhereIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -373,7 +373,7 @@ func (r *DB) WhereIn(field string, in interface{}) *DB {
 }
 
 // WhereNotIn appends NOT IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) WhereNotIn(field string, in interface{}) *DB {
+func (r *DB) WhereNotIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -383,7 +383,7 @@ func (r *DB) WhereNotIn(field string, in interface{}) *DB {
 }
 
 // OrWhereIn appends OR IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) OrWhereIn(field string, in interface{}) *DB {
+func (r *DB) OrWhereIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -393,7 +393,7 @@ func (r *DB) OrWhereIn(field string, in interface{}) *DB {
 }
 
 // OrWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) OrWhereNotIn(field string, in interface{}) *DB {
+func (r *DB) OrWhereNotIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -403,7 +403,7 @@ func (r *DB) OrWhereNotIn(field string, in interface{}) *DB {
 }
 
 // AndWhereIn appends OR IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) AndWhereIn(field string, in interface{}) *DB {
+func (r *DB) AndWhereIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -414,7 +414,7 @@ func (r *DB) AndWhereIn(field string, in interface{}) *DB {
 }
 
 // AndWhereNotIn appends OR NOT IN (val1, val2, val3...) stmt to WHERE clause
-func (r *DB) AndWhereNotIn(field string, in interface{}) *DB {
+func (r *DB) AndWhereNotIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
 		return nil
@@ -454,7 +454,7 @@ func (r *DB) AndWhereNotNull(field string) *DB {
 }
 
 // prepares slice for Where bindings, IN/NOT IN etc
-func prepareSlice(in []interface{}) (out []string) {
+func prepareSlice(in []any) (out []string) {
 	for _, value := range in {
 		switch v := value.(type) {
 		case string:

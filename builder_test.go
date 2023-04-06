@@ -1,6 +1,7 @@
 package buildsqlx
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -44,6 +46,11 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+func TestNewConnectionFromDB(t *testing.T) {
+	conn := NewConnectionFromDb(&sql.DB{})
+	require.Equal(t, conn.db, &sql.DB{})
 }
 
 func TestSelectAndLimit(t *testing.T) {
