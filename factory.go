@@ -20,7 +20,7 @@ var (
 )
 
 // Get builds all sql statements chained before and executes query collecting data to the slice
-func (r *DB) Get() ([]map[string]interface{}, error) {
+func (r *DB) Get() ([]map[string]any, error) {
 	builder := r.Builder
 	if builder.table == "" {
 		return nil, errTableCallBeforeOp
@@ -51,14 +51,14 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 
 	columns, _ := rows.Columns()
 	count := len(columns)
-	values := make([]interface{}, count)
-	valuePtrs := make([]interface{}, count)
+	values := make([]any, count)
+	valuePtrs := make([]any, count)
 
 	// collecting data from struct with fields
-	var res []map[string]interface{}
+	var res []map[string]any
 
 	for rows.Next() {
-		collect := make(map[string]interface{}, count)
+		collect := make(map[string]any, count)
 
 		for i := range columns {
 			valuePtrs[i] = &values[i]
@@ -87,8 +87,8 @@ func (r *DB) Get() ([]map[string]interface{}, error) {
 	return res, nil
 }
 
-func prepareValues(values []map[string]interface{}) []interface{} {
-	var vls []interface{}
+func prepareValues(values []map[string]any) []any {
+	var vls []any
 	for _, v := range values {
 		_, vals, _ := prepareBindings(v)
 		vls = append(vls, vals...)
@@ -143,14 +143,14 @@ func (r *builder) buildClauses() string {
 }
 
 // composes WHERE clause string for particular query stmt
-func composeWhere(whereBindings []map[string]interface{}, startedAt int) string {
+func composeWhere(whereBindings []map[string]any, startedAt int) string {
 	where := " WHERE "
 	i := startedAt
 	for _, m := range whereBindings {
 		for k, v := range m {
 			// operand >= $i
 			switch vi := v.(type) {
-			case []interface{}:
+			case []any:
 				placeholders := make([]string, 0, len(vi))
 				for range vi {
 					placeholders = append(placeholders, "$"+strconv.Itoa(i))
@@ -192,7 +192,7 @@ func composeOrderBy(orderBy []map[string]string, orderByRaw *string) string {
 }
 
 // Insert inserts one row with param bindings
-func (r *DB) Insert(data map[string]interface{}) error {
+func (r *DB) Insert(data map[string]any) error {
 	builder := r.Builder
 	if builder.table == "" {
 		return errTableCallBeforeOp
@@ -212,7 +212,7 @@ func (r *DB) Insert(data map[string]interface{}) error {
 }
 
 // InsertGetId inserts one row with param bindings and returning id
-func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
+func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -232,8 +232,8 @@ func (r *DB) InsertGetId(data map[string]interface{}) (uint64, error) {
 	return id, nil
 }
 
-func prepareValue(value interface{}) []interface{} {
-	values := []interface{}{}
+func prepareValue(value any) []any {
+	var values []any
 	switch v := value.(type) {
 	case string:
 		//if where { // todo: left comments for further exploration, probably incorrect behaviour for pg driver
@@ -249,7 +249,7 @@ func prepareValue(value interface{}) []interface{} {
 		values = append(values, strconv.FormatInt(v, 10))
 	case uint64:
 		values = append(values, strconv.FormatUint(v, 10))
-	case []interface{}:
+	case []any:
 		for _, vi := range v {
 			values = append(values, prepareValue(vi)...)
 		}
@@ -261,7 +261,7 @@ func prepareValue(value interface{}) []interface{} {
 }
 
 // prepareBindings prepares slices to split in favor of INSERT sql statement
-func prepareBindings(data map[string]interface{}) (columns []string, values []interface{}, bindings []string) {
+func prepareBindings(data map[string]any) (columns []string, values []any, bindings []string) {
 	i := 1
 	for column, value := range data {
 		if strings.Contains(column, sqlOperatorIs) || strings.Contains(column, sqlOperatorBetween) {
@@ -284,7 +284,7 @@ func prepareBindings(data map[string]interface{}) (columns []string, values []in
 }
 
 // InsertBatch inserts multiple rows based on transaction
-func (r *DB) InsertBatch(data []map[string]interface{}) error {
+func (r *DB) InsertBatch(data []map[string]any) error {
 	builder := r.Builder
 	if builder.table == "" {
 		return errTableCallBeforeOp
@@ -328,13 +328,13 @@ func (r *DB) InsertBatch(data []map[string]interface{}) error {
 }
 
 // prepareInsertBatch prepares slices to split in favor of INSERT sql statement
-func prepareInsertBatch(data []map[string]interface{}) (columns []string, values [][]interface{}) {
-	values = make([][]interface{}, len(data))
+func prepareInsertBatch(data []map[string]any) (columns []string, values [][]any) {
+	values = make([][]any, len(data))
 	colToIdx := make(map[string]int)
 
 	i := 0
 	for k, v := range data {
-		values[k] = make([]interface{}, len(v))
+		values[k] = make([]any, len(v))
 
 		for column, value := range v {
 			if k == 0 {
@@ -364,7 +364,7 @@ func prepareInsertBatch(data []map[string]interface{}) (columns []string, values
 
 // Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
 // returning affected rows
-func (r *DB) Update(data map[string]interface{}) (int64, error) {
+func (r *DB) Update(data map[string]any) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -414,7 +414,7 @@ func (r *DB) Delete() (int64, error) {
 }
 
 // Replace inserts data if conflicting row hasn't been found, else it will update an existing one
-func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error) {
+func (r *DB) Replace(data map[string]any, conflict string) (int64, error) {
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -436,7 +436,7 @@ func (r *DB) Replace(data map[string]interface{}, conflict string) (int64, error
 
 // InTransaction executes fn passed as an argument in transaction mode
 // if there are no results returned - txn will be rolled back, otherwise committed and returned
-func (r *DB) InTransaction(fn func() (interface{}, error)) error {
+func (r *DB) InTransaction(fn func() (any, error)) error {
 	txn, err := r.Sql().Begin()
 	if err != nil {
 		return err
@@ -465,11 +465,11 @@ func (r *DB) InTransaction(fn func() (interface{}, error)) error {
 		if v > 0 {
 			isOk = true
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(v) > 0 {
 			isOk = true
 		}
-	case map[string]interface{}:
+	case map[string]any:
 		if len(v) > 0 {
 			isOk = true
 		}

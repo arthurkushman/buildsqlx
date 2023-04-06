@@ -1,6 +1,6 @@
 module github.com/arthurkushman/buildsqlx
 
-go 1.17
+go 1.18
 
 require (
 	github.com/lib/pq v1.2.0
