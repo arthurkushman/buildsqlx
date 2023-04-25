@@ -232,6 +232,27 @@ func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
 	return id, nil
 }
 
+// InsertGetCustomId inserts one row with param bindings and returning custom id
+func (r *DB) InsertGetCustomId(fieldName string, data map[string]any) (uint64, error) {
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, errTableCallBeforeOp
+	}
+
+	columns, values, bindings := prepareBindings(data)
+
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING ` + fieldName
+
+	var id uint64
+	err := r.Sql().QueryRow(query, values...).Scan(&id)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
 func prepareValue(value any) []any {
 	var values []any
 	switch v := value.(type) {
