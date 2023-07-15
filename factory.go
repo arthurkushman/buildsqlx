@@ -16,7 +16,8 @@ const (
 
 var (
 	// Custom errors
-	errTableCallBeforeOp = fmt.Errorf("sql: there was no Table() call with table name set")
+	errTableCallBeforeOp        = fmt.Errorf("sql: there was no Table() call with table name set")
+	errTransactionModeWithoutTx = fmt.Errorf("sql: there was no *sql.Tx object set properly")
 )
 
 // Get builds all sql statements chained before and executes query collecting data to the slice
@@ -193,6 +194,10 @@ func composeOrderBy(orderBy []map[string]string, orderByRaw *string) string {
 
 // Insert inserts one row with param bindings
 func (r *DB) Insert(data map[string]any) error {
+	if r.Txn != nil {
+		return r.Txn.Insert(data)
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return errTableCallBeforeOp
@@ -211,8 +216,36 @@ func (r *DB) Insert(data map[string]any) error {
 	return nil
 }
 
+// Insert inserts one row with param bindings
+func (r *Txn) Insert(data map[string]any) error {
+	if r.Tx == nil {
+		return errTransactionModeWithoutTx
+	}
+
+	builder := r.Builder
+	if builder.table == "" {
+		return errTableCallBeforeOp
+	}
+
+	columns, values, bindings := prepareBindings(data)
+
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `)`
+
+	_, err := r.Tx.Exec(query, values...)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // InsertGetId inserts one row with param bindings and returning id
 func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
+	if r.Txn != nil {
+		return r.Txn.InsertGetId(data)
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -224,6 +257,31 @@ func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
 
 	var id uint64
 	err := r.Sql().QueryRow(query, values...).Scan(&id)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+// InsertGetId inserts one row with param bindings and returning id
+func (r *Txn) InsertGetId(data map[string]any) (uint64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, errTableCallBeforeOp
+	}
+
+	columns, values, bindings := prepareBindings(data)
+
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING id`
+
+	var id uint64
+	err := r.Tx.QueryRow(query, values...).Scan(&id)
 
 	if err != nil {
 		return 0, err
@@ -365,6 +423,10 @@ func prepareInsertBatch(data []map[string]any) (columns []string, values [][]any
 // Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
 // returning affected rows
 func (r *DB) Update(data map[string]any) (int64, error) {
+	if r.Txn != nil {
+		return r.Txn.Update(data)
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -396,9 +458,51 @@ func (r *DB) Update(data map[string]any) (int64, error) {
 	return res.RowsAffected()
 }
 
+// Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
+// returning affected rows
+func (r *Txn) Update(data map[string]any) (int64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, errTableCallBeforeOp
+	}
+
+	columns, values, bindings := prepareBindings(data)
+	setVal := ""
+	l := len(columns)
+	for k, col := range columns {
+		setVal += col + " = " + bindings[k]
+		if k < l-1 {
+			setVal += ", "
+		}
+	}
+
+	query := `UPDATE "` + r.Builder.table + `" SET ` + setVal
+	if r.Builder.from != "" {
+		query += " FROM " + r.Builder.from
+	}
+
+	r.Builder.startBindingsAt = l + 1
+	query += r.Builder.buildClauses()
+	values = append(values, prepareValues(r.Builder.whereBindings)...)
+	res, err := r.Tx.Exec(query, values...)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.RowsAffected()
+}
+
 // Delete builds a DELETE stmt with corresponding where clause if stated
 // returning affected rows
 func (r *DB) Delete() (int64, error) {
+	if r.Txn != nil {
+		return r.Txn.Delete()
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -410,11 +514,38 @@ func (r *DB) Delete() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	return res.RowsAffected()
+}
+
+// Delete builds a DELETE stmt with corresponding where clause if stated
+// returning affected rows
+func (r *Txn) Delete() (int64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, errTableCallBeforeOp
+	}
+
+	query := `DELETE FROM "` + r.Builder.table + `"`
+	query += r.Builder.buildClauses()
+	res, err := r.Tx.Exec(query, prepareValues(r.Builder.whereBindings)...)
+	if err != nil {
+		return 0, err
+	}
+
 	return res.RowsAffected()
 }
 
 // Replace inserts data if conflicting row hasn't been found, else it will update an existing one
 func (r *DB) Replace(data map[string]any, conflict string) (int64, error) {
+	if r.Txn != nil {
+		return r.Txn.Replace(data, conflict)
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -431,6 +562,33 @@ func (r *DB) Replace(data map[string]any, conflict string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	return res.RowsAffected()
+}
+
+// Replace inserts data if conflicting row hasn't been found, else it will update an existing one
+func (r *Txn) Replace(data map[string]any, conflict string) (int64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
+	builder := r.Builder
+	if builder.table == "" {
+		return 0, errTableCallBeforeOp
+	}
+
+	columns, values, bindings := prepareBindings(data)
+	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) ON CONFLICT(` + conflict + `) DO UPDATE SET `
+	for i, v := range columns {
+		columns[i] = v + " = excluded." + v
+	}
+
+	query += strings.Join(columns, ", ")
+	res, err := r.Tx.Exec(query, values...)
+	if err != nil {
+		return 0, err
+	}
+
 	return res.RowsAffected()
 }
 
@@ -442,6 +600,16 @@ func (r *DB) InTransaction(fn func() (any, error)) error {
 		return err
 	}
 
+	// assign transaction + builder to Txn entity
+	r.Txn = &Txn{
+		Tx:      txn,
+		Builder: r.Builder,
+	}
+
+	defer func() {
+		// clear Txn object after commit
+		r.Txn = nil
+	}()
 	res, err := fn()
 	if err != nil {
 		errTxn := txn.Rollback()
