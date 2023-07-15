@@ -411,7 +411,7 @@ func TestDB_InTransaction(t *testing.T) {
 				assert.NoError(t, err)
 			}()
 
-			err = db.InTransaction(func() (interface{}, error) {
+			err = db.InTransaction(func() (any, error) {
 				err = db.Table(TestTable).Insert(tt.dataMap)
 
 				return tt.res, tt.err
@@ -424,23 +424,6 @@ func TestDB_InTransaction(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDB_InTransactionErr(t *testing.T) {
-	_, err := db.Truncate(TestTable)
-	assert.NoError(t, err)
-
-	defer func() {
-		_, err = db.Truncate(TestTable)
-		assert.NoError(t, err)
-	}()
-
-	err = db.InTransaction(func() (interface{}, error) {
-		err = db.Table(TestTable).Insert(dataMap)
-
-		return 0, errors.New("some err")
-	})
-	assert.Error(t, err, errors.New("some err"))
 }
 
 func TestDB_HasTable(t *testing.T) {

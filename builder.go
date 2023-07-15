@@ -58,6 +58,12 @@ type builder struct {
 type DB struct {
 	Builder *builder
 	Conn    *Connection
+	Txn     *Txn
+}
+
+type Txn struct {
+	Tx      *sql.Tx
+	Builder *builder
 }
 
 func newBuilder() *builder {
