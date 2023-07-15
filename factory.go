@@ -16,7 +16,8 @@ const (
 
 var (
 	// Custom errors
-	errTableCallBeforeOp = fmt.Errorf("sql: there was no Table() call with table name set")
+	errTableCallBeforeOp        = fmt.Errorf("sql: there was no Table() call with table name set")
+	errTransactionModeWithoutTx = fmt.Errorf("sql: there was no *sql.Tx object set properly")
 )
 
 // Get builds all sql statements chained before and executes query collecting data to the slice
@@ -193,7 +194,7 @@ func composeOrderBy(orderBy []map[string]string, orderByRaw *string) string {
 
 // Insert inserts one row with param bindings
 func (r *DB) Insert(data map[string]any) error {
-	if r.Txn.Tx != nil {
+	if r.Txn != nil {
 		return r.Txn.Insert(data)
 	}
 
@@ -217,6 +218,10 @@ func (r *DB) Insert(data map[string]any) error {
 
 // Insert inserts one row with param bindings
 func (r *Txn) Insert(data map[string]any) error {
+	if r.Tx == nil {
+		return errTransactionModeWithoutTx
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return errTableCallBeforeOp
@@ -262,6 +267,10 @@ func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
 
 // InsertGetId inserts one row with param bindings and returning id
 func (r *Txn) InsertGetId(data map[string]any) (uint64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -452,6 +461,10 @@ func (r *DB) Update(data map[string]any) (int64, error) {
 // Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
 // returning affected rows
 func (r *Txn) Update(data map[string]any) (int64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -508,6 +521,10 @@ func (r *DB) Delete() (int64, error) {
 // Delete builds a DELETE stmt with corresponding where clause if stated
 // returning affected rows
 func (r *Txn) Delete() (int64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -551,6 +568,10 @@ func (r *DB) Replace(data map[string]any, conflict string) (int64, error) {
 
 // Replace inserts data if conflicting row hasn't been found, else it will update an existing one
 func (r *Txn) Replace(data map[string]any, conflict string) (int64, error) {
+	if r.Tx == nil {
+		return 0, errTransactionModeWithoutTx
+	}
+
 	builder := r.Builder
 	if builder.table == "" {
 		return 0, errTableCallBeforeOp
@@ -584,6 +605,11 @@ func (r *DB) InTransaction(fn func() (any, error)) error {
 		Tx:      txn,
 		Builder: r.Builder,
 	}
+
+	defer func() {
+		// clear Txn object after commit
+		r.Txn = nil
+	}()
 	res, err := fn()
 	if err != nil {
 		errTxn := txn.Rollback()
