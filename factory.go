@@ -1,12 +1,18 @@
 package buildsqlx
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/fatih/structs"
 	"github.com/lib/pq"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -20,29 +26,32 @@ var (
 	errTransactionModeWithoutTx = fmt.Errorf("sql: there was no *sql.Tx object set properly")
 )
 
+type EachToStructFunc func(rows *sql.Rows) error
+
 // Get builds all sql statements chained before and executes query collecting data to the slice
+// Deprecated: this method will no longer be used in future releases, because of ScanStruct and EachToStruct replacement
 func (r *DB) Get() ([]map[string]any, error) {
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return nil, errTableCallBeforeOp
 	}
 
 	query := ""
-	if len(builder.union) > 0 { // got union - need different logic to glue
-		for _, uBuilder := range builder.union {
+	if len(bldr.union) > 0 { // got union - need different logic to glue
+		for _, uBuilder := range bldr.union {
 			query += uBuilder + " UNION "
 
-			if builder.isUnionAll {
+			if bldr.isUnionAll {
 				query += "ALL "
 			}
 		}
 
-		query += builder.buildSelect()
+		query += bldr.buildSelect()
 		// clean union (all) after ensuring selects are built
 		r.Builder.union = []string{}
 		r.Builder.isUnionAll = false
-	} else { // std builder
-		query = builder.buildSelect()
+	} else { // std bldr
+		query = bldr.buildSelect()
 	}
 
 	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
@@ -65,8 +74,7 @@ func (r *DB) Get() ([]map[string]any, error) {
 			valuePtrs[i] = &values[i]
 		}
 
-		err := rows.Scan(valuePtrs...)
-
+		err = rows.Scan(valuePtrs...)
 		if err != nil {
 			return nil, err
 		}
@@ -86,6 +94,228 @@ func (r *DB) Get() ([]map[string]any, error) {
 	}
 
 	return res, nil
+}
+
+// ScanStruct scans query into specific struct
+func (r *DB) ScanStruct(src any) error {
+	if reflect.ValueOf(src).IsNil() {
+		return fmt.Errorf("cannot decode into nil type %T", src)
+	}
+
+	sqlBuilder := r.Builder
+	if sqlBuilder.table == "" {
+		return errTableCallBeforeOp
+	}
+
+	sqlBuilder.limit = 1
+	query := ""
+	if len(sqlBuilder.union) > 0 { // got union - need different logic to glue
+		for _, uBuilder := range sqlBuilder.union {
+			query += uBuilder + " UNION "
+
+			if sqlBuilder.isUnionAll {
+				query += "ALL "
+			}
+		}
+
+		query += sqlBuilder.buildSelect()
+		// clean union (all) after ensuring selects are built
+		r.Builder.union = []string{}
+		r.Builder.isUnionAll = false
+	} else { // std builder
+		query = sqlBuilder.buildSelect()
+	}
+
+	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
+	if err != nil {
+		return err
+	}
+
+	columns, _ := rows.Columns()
+	count := len(columns)
+	values := make([]any, count)
+	valuePtrs := make([]any, count)
+
+	// resource is the actual value that ptr points to.
+	resource := reflect.ValueOf(src).Elem()
+	if err = validateFields(resource, src, columns); err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+
+		err = rows.Scan(valuePtrs...)
+		if err != nil {
+			return err
+		}
+
+		for i, col := range columns {
+			val := values[i]
+			setResourceValue(resource, src, cases.Title(language.English).String(col), val)
+		}
+
+		src = resource
+	}
+
+	return nil
+}
+
+// EachToStruct scans query into specific struct per row with iterative behaviour
+func (r *DB) EachToStruct(fn EachToStructFunc) error {
+	sqlBuilder := r.Builder
+	if sqlBuilder.table == "" {
+		return errTableCallBeforeOp
+	}
+
+	query := ""
+	if len(sqlBuilder.union) > 0 { // got union - need different logic to glue
+		for _, uBuilder := range sqlBuilder.union {
+			query += uBuilder + " UNION "
+
+			if sqlBuilder.isUnionAll {
+				query += "ALL "
+			}
+		}
+
+		query += sqlBuilder.buildSelect()
+		// clean union (all) after ensuring selects are built
+		r.Builder.union = []string{}
+		r.Builder.isUnionAll = false
+	} else { // std builder
+		query = sqlBuilder.buildSelect()
+	}
+
+	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
+	if err != nil {
+		return err
+	}
+
+	for {
+		err = fn(rows)
+		if errors.Is(err, ErrNoMoreRows) {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+}
+
+// ErrNoMoreRows is returned by Next when there were no more rows
+var ErrNoMoreRows = errors.New("sql: no more rows")
+
+// Next will parse the next row into a struct passed as src parameter.
+// Returns ErrNoMoreRows if there are no more row to parse
+func (r *DB) Next(rows *sql.Rows, src any) error {
+	if reflect.ValueOf(src).IsNil() {
+		return fmt.Errorf("cannot decode into nil type %T", src)
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	count := len(columns)
+	// resource is the actual value that ptr points to.
+	resource := reflect.ValueOf(src).Elem()
+	if err = validateFields(resource, src, columns); err != nil {
+		return err
+	}
+
+	values := make([]any, count)
+	valuePtrs := make([]any, count)
+	if rows.Next() {
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+
+		err = rows.Scan(valuePtrs...)
+		if err != nil {
+			return err
+		}
+
+		for i, col := range columns {
+			val := values[i]
+			setResourceValue(resource, src, cases.Title(language.English).String(col), val)
+		}
+		src = resource
+
+		return nil
+	}
+
+	return ErrNoMoreRows
+}
+
+func setResourceValue(resource reflect.Value, src any, col string, value any) {
+	if !resource.FieldByName(col).IsValid() { // try to get field by db: tag
+		fields := structs.Fields(src)
+		for i, f := range fields {
+			tag := f.Tag("db")
+			if tag == strings.ToLower(col) {
+				setValue(resource.Field(i), value)
+				return
+			}
+		}
+	}
+
+	setValue(resource.FieldByName(col), value)
+}
+
+func setValue(field reflect.Value, val any) {
+	if field.Kind() == reflect.Ptr {
+		newVal := reflect.New(field.Type().Elem())
+		newVal.Elem().Set(reflect.ValueOf(val))
+		field.Set(newVal)
+
+		return
+	}
+
+	switch v := val.(type) {
+	case string:
+		field.SetString(v)
+	case int:
+		field.SetInt(int64(v))
+	case int64:
+		field.SetInt(v)
+	case float64:
+		field.SetFloat(v)
+	case uint64:
+		field.SetUint(v)
+	case nil:
+		field.SetPointer(nil)
+	}
+
+	if reflect.TypeOf(val).Kind() == reflect.Ptr {
+		setValue(field, reflect.ValueOf(val).Elem().Interface())
+	}
+}
+
+func validateFields(resource reflect.Value, src any, columns []string) error {
+	for _, col := range columns {
+		foundColByTag := false
+		fieldName := cases.Title(language.English).String(col)
+		if !resource.FieldByName(fieldName).IsValid() {
+			fields := structs.Fields(src)
+			for _, f := range fields {
+				tag := f.Tag("db")
+				if tag == col {
+					foundColByTag = true
+					break
+				}
+			}
+
+			if !foundColByTag {
+				return fmt.Errorf("field %s not found in struct", fieldName)
+			}
+		}
+	}
+
+	return nil
 }
 
 func prepareValues(values []map[string]any) []any {
@@ -192,23 +422,22 @@ func composeOrderBy(orderBy []map[string]string, orderByRaw *string) string {
 	return ""
 }
 
-// Insert inserts one row with param bindings
-func (r *DB) Insert(data map[string]any) error {
+// Insert inserts one row with param bindings for struct
+func (r *DB) Insert(data any) error {
 	if r.Txn != nil {
 		return r.Txn.Insert(data)
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindingsForStruct(data)
 
-	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `)`
+	query := `INSERT INTO "` + bldr.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `)`
 
 	_, err := r.Sql().Exec(query, values...)
-
 	if err != nil {
 		return err
 	}
@@ -216,23 +445,23 @@ func (r *DB) Insert(data map[string]any) error {
 	return nil
 }
 
-// Insert inserts one row with param bindings
-func (r *Txn) Insert(data map[string]any) error {
+// Insert inserts one row with param bindings from struct
+// in transaction context
+func (r *Txn) Insert(data any) error {
 	if r.Tx == nil {
 		return errTransactionModeWithoutTx
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindingsForStruct(data)
 
-	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `)`
+	query := `INSERT INTO "` + bldr.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `)`
 
 	_, err := r.Tx.Exec(query, values...)
-
 	if err != nil {
 		return err
 	}
@@ -241,19 +470,19 @@ func (r *Txn) Insert(data map[string]any) error {
 }
 
 // InsertGetId inserts one row with param bindings and returning id
-func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
+func (r *DB) InsertGetId(data any) (uint64, error) {
 	if r.Txn != nil {
 		return r.Txn.InsertGetId(data)
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindingsForStruct(data)
 
-	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING id`
+	query := `INSERT INTO "` + bldr.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING id`
 
 	var id uint64
 	err := r.Sql().QueryRow(query, values...).Scan(&id)
@@ -266,19 +495,20 @@ func (r *DB) InsertGetId(data map[string]any) (uint64, error) {
 }
 
 // InsertGetId inserts one row with param bindings and returning id
-func (r *Txn) InsertGetId(data map[string]any) (uint64, error) {
+// in transaction context
+func (r *Txn) InsertGetId(data any) (uint64, error) {
 	if r.Tx == nil {
 		return 0, errTransactionModeWithoutTx
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindingsForStruct(data)
 
-	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING id`
+	query := `INSERT INTO "` + bldr.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) RETURNING id`
 
 	var id uint64
 	err := r.Tx.QueryRow(query, values...).Scan(&id)
@@ -290,15 +520,31 @@ func (r *Txn) InsertGetId(data map[string]any) (uint64, error) {
 	return id, nil
 }
 
+func prepareValuesForStruct(value reflect.Value) []any {
+	var values []any
+	switch value.Kind() {
+	case reflect.String:
+		values = append(values, value.String())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		values = append(values, strconv.FormatInt(value.Int(), 10))
+	case reflect.Float32, reflect.Float64:
+		values = append(values, fmt.Sprintf("%g", value.Float()))
+	case reflect.Ptr:
+		if value.IsNil() {
+			values = append(values, nil)
+		} else {
+			values = prepareValuesForStruct(value.Elem())
+		}
+	}
+
+	return values
+}
+
 func prepareValue(value any) []any {
 	var values []any
 	switch v := value.(type) {
 	case string:
-		//if where { // todo: left comments for further exploration, probably incorrect behaviour for pg driver
-		//	values = append(values, "'"+v+"'")
-		//} else {
 		values = append(values, v)
-		//}
 	case int:
 		values = append(values, strconv.FormatInt(int64(v), 10))
 	case float64:
@@ -339,6 +585,44 @@ func prepareBindings(data map[string]any) (columns []string, values []any, bindi
 	}
 
 	return
+}
+
+// prepareBindingsForStruct prepares all bindings for SQL-query
+func prepareBindingsForStruct(data any) (columns []string, values []any, bindings []string) {
+	j := 1
+	resource := reflect.ValueOf(data)
+	t := reflect.TypeOf(data)
+	for i := 0; i < t.NumField(); i++ {
+		value := resource.Field(i)
+		col := getColumn(t.Field(i))
+
+		if strings.Contains(col, sqlOperatorIs) || strings.Contains(col, sqlOperatorBetween) {
+			continue
+		}
+
+		columns = append(columns, col)
+		pValues := prepareValuesForStruct(value)
+		if len(pValues) > 0 {
+			values = append(values, pValues...)
+
+			for range pValues {
+				bindings = append(bindings, "$"+strconv.FormatInt(int64(j), 10))
+				j++
+			}
+		}
+	}
+
+	return
+}
+
+// getColumn gets column name and value
+func getColumn(structField reflect.StructField) string {
+	col := strings.ToLower(structField.Name)
+	if structField.Tag.Get("db") != "" {
+		col = structField.Tag.Get("db")
+	}
+
+	return col
 }
 
 // InsertBatch inserts multiple rows based on transaction
@@ -422,17 +706,17 @@ func prepareInsertBatch(data []map[string]any) (columns []string, values [][]any
 
 // Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
 // returning affected rows
-func (r *DB) Update(data map[string]any) (int64, error) {
+func (r *DB) Update(data any) (int64, error) {
 	if r.Txn != nil {
 		return r.Txn.Update(data)
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindingsForStruct(data)
 	setVal := ""
 	l := len(columns)
 	for k, col := range columns {
@@ -460,17 +744,17 @@ func (r *DB) Update(data map[string]any) (int64, error) {
 
 // Update builds an UPDATE sql stmt with corresponding where/from clauses if stated
 // returning affected rows
-func (r *Txn) Update(data map[string]any) (int64, error) {
+func (r *Txn) Update(data any) (int64, error) {
 	if r.Tx == nil {
 		return 0, errTransactionModeWithoutTx
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
+	columns, values, bindings := prepareBindingsForStruct(data)
 	setVal := ""
 	l := len(columns)
 	for k, col := range columns {
@@ -503,8 +787,8 @@ func (r *DB) Delete() (int64, error) {
 		return r.Txn.Delete()
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
@@ -525,8 +809,8 @@ func (r *Txn) Delete() (int64, error) {
 		return 0, errTransactionModeWithoutTx
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
@@ -541,18 +825,18 @@ func (r *Txn) Delete() (int64, error) {
 }
 
 // Replace inserts data if conflicting row hasn't been found, else it will update an existing one
-func (r *DB) Replace(data map[string]any, conflict string) (int64, error) {
+func (r *DB) Replace(data any, conflict string) (int64, error) {
 	if r.Txn != nil {
 		return r.Txn.Replace(data, conflict)
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
-	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) ON CONFLICT(` + conflict + `) DO UPDATE SET `
+	columns, values, bindings := prepareBindingsForStruct(data)
+	query := `INSERT INTO "` + bldr.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) ON CONFLICT(` + conflict + `) DO UPDATE SET `
 	for i, v := range columns {
 		columns[i] = v + " = excluded." + v
 	}
@@ -567,18 +851,18 @@ func (r *DB) Replace(data map[string]any, conflict string) (int64, error) {
 }
 
 // Replace inserts data if conflicting row hasn't been found, else it will update an existing one
-func (r *Txn) Replace(data map[string]any, conflict string) (int64, error) {
+func (r *Txn) Replace(data any, conflict string) (int64, error) {
 	if r.Tx == nil {
 		return 0, errTransactionModeWithoutTx
 	}
 
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 
-	columns, values, bindings := prepareBindings(data)
-	query := `INSERT INTO "` + builder.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) ON CONFLICT(` + conflict + `) DO UPDATE SET `
+	columns, values, bindings := prepareBindingsForStruct(data)
+	query := `INSERT INTO "` + bldr.table + `" (` + strings.Join(columns, `, `) + `) VALUES(` + strings.Join(bindings, `, `) + `) ON CONFLICT(` + conflict + `) DO UPDATE SET `
 	for i, v := range columns {
 		columns[i] = v + " = excluded." + v
 	}
