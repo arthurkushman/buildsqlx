@@ -4,14 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const TableToCreate = "big_tbl"
 
 func TestDB_CreateEmptyTable(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		return nil
@@ -20,7 +20,7 @@ func TestDB_CreateEmptyTable(t *testing.T) {
 
 func TestDB_CreateTable(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.Increments("id")
@@ -40,11 +40,11 @@ func TestDB_CreateTable(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	is, err := db.HasTable("public", TableToCreate)
-	assert.NoError(t, err)
-	assert.True(t, is)
+	require.NoError(t, err)
+	require.True(t, is)
 
 	_, err = db.Schema("tbl_to_ref", func(table *Table) error {
 		table.Increments("id")
@@ -52,25 +52,25 @@ func TestDB_CreateTable(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// test some err returning from fn()
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		return errors.New("some err")
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// 1st drop the referencing tbl
 	_, err = db.Drop("tbl_to_ref")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// then referenced
 	_, err = db.Drop(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestTable_BigIncrements(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := db.SchemaIfNotExists(TableToCreate, func(table *Table) error {
 		table.BigIncrements("id")
@@ -79,14 +79,14 @@ func TestTable_BigIncrements(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = res.RowsAffected()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	is, err := db.HasTable("public", TableToCreate)
-	assert.NoError(t, err)
-	assert.True(t, is)
+	require.NoError(t, err)
+	require.True(t, is)
 
 	// test add columns
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
@@ -97,11 +97,11 @@ func TestTable_BigIncrements(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	isCol, err := db.HasColumns("public", TableToCreate, "title")
-	assert.NoError(t, err)
-	assert.True(t, isCol)
+	require.NoError(t, err)
+	require.True(t, isCol)
 
 	// test modify the column
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
@@ -109,7 +109,7 @@ func TestTable_BigIncrements(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// test drop the column
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
@@ -118,19 +118,19 @@ func TestTable_BigIncrements(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	isCol, err = db.HasColumns("public", TableToCreate, "title")
-	assert.NoError(t, err)
-	assert.False(t, isCol)
+	require.NoError(t, err)
+	require.False(t, isCol)
 
 	_, err = db.Drop(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestTable_DateTime(t *testing.T) {
 	_, err := db.DropIfExists(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
 		table.Increments("id")
@@ -143,11 +143,11 @@ func TestTable_DateTime(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	is, err := db.HasTable("public", TableToCreate)
-	assert.NoError(t, err)
-	assert.True(t, is)
+	require.NoError(t, err)
+	require.True(t, is)
 
 	// test modify the column
 	_, err = db.Schema(TableToCreate, func(table *Table) error {
@@ -156,12 +156,12 @@ func TestTable_DateTime(t *testing.T) {
 
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	isCol, err := db.HasColumns("public", TableToCreate, "options")
-	assert.NoError(t, err)
-	assert.True(t, isCol)
+	require.NoError(t, err)
+	require.True(t, isCol)
 
 	_, err = db.Drop(TableToCreate)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
