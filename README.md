@@ -151,7 +151,7 @@ res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts"
 ## Inserts
 
 The query builder also provides an insert method for inserting records into the database table.
-The insert method accepts a map of column names and values:
+The Insert/InsertBatch methods accept a structure (or slice of structs) of column names and values:
 
 ```go
 // insert without getting id
@@ -169,10 +169,10 @@ id, err := db.Table("table1").InsertGetId(DataStruct{
 })
 
 // batch insert 
-err := db.Table("table1").InsertBatch([]map[string]interface{}{
-    0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": 123},
-    1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": 1234},
-    2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": 12345},
+err := db.Table("table1").InsertBatch([]DataStruct{
+    {Foo: "foo foo foo", Bar: "bar bar bar", Baz: &baz},
+    {Foo: "foo foo foo foo", Bar: "bar bar bar bar", Baz: &baz},
+    {Foo: "foo foo foo foo foo", Bar: "bar bar bar bar bar", Baz: &baz},
 })
 ```
 
@@ -445,9 +445,7 @@ err = db.Table("user_achievements").Select("points").Where("id", "=", id).Chunk(
 })
 ```
 
-PS Why use buildsqlx? Because it is simple and fast, yet versatile.
-The performance achieved because of structs conversion lack, as all that you need is just a columns - u can get it from
-an associated array/map while the conversion itself and it's processing eats more CPU/memory resources.
+PS Why use buildsqlx? Because it is simple and fast, yet versatile. The builder code-style has been inherited from greatest web-frameworks, so u can easily query anything from db. 
 
 Supporters gratitude:
 
