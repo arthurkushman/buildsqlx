@@ -626,9 +626,9 @@ func getColumn(structField reflect.StructField) string {
 }
 
 // InsertBatch inserts multiple rows based on transaction
-func (r *DB) InsertBatch(data []map[string]any) error {
-	builder := r.Builder
-	if builder.table == "" {
+func (r *DB) InsertBatch(data any) error {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return errTableCallBeforeOp
 	}
 
@@ -637,9 +637,10 @@ func (r *DB) InsertBatch(data []map[string]any) error {
 		log.Fatal(err)
 	}
 
-	columns, values := prepareInsertBatch(data)
+	iSlice := anySlice(data)
+	columns, values := prepareInsertBatchForStructs(iSlice)
 
-	stmt, err := txn.Prepare(pq.CopyIn(builder.table, columns...))
+	stmt, err := txn.Prepare(pq.CopyIn(bldr.table, columns...))
 	if err != nil {
 		return err
 	}
@@ -669,39 +670,73 @@ func (r *DB) InsertBatch(data []map[string]any) error {
 	return nil
 }
 
-// prepareInsertBatch prepares slices to split in favor of INSERT sql statement
-func prepareInsertBatch(data []map[string]any) (columns []string, values [][]any) {
-	values = make([][]any, len(data))
+// prepareInsertBatchForStructs prepares the column names and values for inserting multiple structs into a database table.
+//
+// It takes in a slice of any structs called data and returns two slices: columns and values.
+// The columns slice contains the column names, while the values slice contains the corresponding values for each struct.
+func prepareInsertBatchForStructs[T any](data []T) (columns []string, values [][]interface{}) {
+	values = make([][]interface{}, len(data))
 	colToIdx := make(map[string]int)
 
 	i := 0
 	for k, v := range data {
-		values[k] = make([]any, len(v))
+		values[k] = make([]interface{}, 0)
 
-		for column, value := range v {
+		structValue := reflect.ValueOf(v)
+		structType := structValue.Type()
+
+		for j := 0; j < structValue.NumField(); j++ {
+			fieldValue := structValue.Field(j)
+			fieldType := structType.Field(j)
+
+			columnName := strings.ToLower(fieldType.Name)
+			if fieldType.Tag.Get("db") != "" {
+				columnName = fieldType.Tag.Get("db")
+			}
+			columnValue := fieldValue.Interface()
+
 			if k == 0 {
-				columns = append(columns, column)
-				// todo: don't know yet how to match them explicitly (it is bad idea, but it works well now)
-				colToIdx[column] = i
+				columns = append(columns, columnName)
+				colToIdx[columnName] = i
 				i++
 			}
 
-			switch casted := value.(type) {
-			case string:
-				values[k][colToIdx[column]] = casted
-			case int:
-				values[k][colToIdx[column]] = strconv.FormatInt(int64(casted), 10)
-			case float64:
-				values[k][colToIdx[column]] = fmt.Sprintf("%g", casted)
-			case int64:
-				values[k][colToIdx[column]] = strconv.FormatInt(casted, 10)
-			case uint64:
-				values[k][colToIdx[column]] = strconv.FormatUint(casted, 10)
-			}
+			values[k] = append(values[k], columnValue)
 		}
 	}
 
 	return
+}
+
+// anySlice converts a slice of any type to a slice of interface{} type.
+//
+// It takes a slice as input and returns a new slice where each element is
+// converted to the interface{} type. The input slice can be nil or empty,
+// in which case the function returns nil.
+//
+// Parameters:
+// - slice: The input slice to be converted.
+//
+// Return:
+//   - []interface{}: The converted slice where each element is of type
+//     interface{}.
+func anySlice(slice any) []any {
+	s := reflect.ValueOf(slice)
+	if s.Kind() != reflect.Slice {
+		return nil
+	}
+
+	// Keep the distinction between nil and empty slice input
+	if s.IsNil() {
+		return nil
+	}
+
+	ret := make([]any, s.Len())
+	for i := 0; i < s.Len(); i++ {
+		ret[i] = s.Index(i).Interface()
+	}
+
+	return ret
 }
 
 // Update builds an UPDATE sql stmt with corresponding where/from clauses if stated

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
@@ -60,11 +61,21 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// TestNewConnectionFromDB tests the NewConnectionFromDB function.
+//
+// This function takes a testing.T object as a parameter and creates a new connection
+// from a database. It then asserts that the created connection's "db" field is equal
+// to the provided sql.DB object.
 func TestNewConnectionFromDB(t *testing.T) {
 	conn := NewConnectionFromDb(&sql.DB{})
 	require.Equal(t, conn.db, &sql.DB{})
 }
 
+// TestSelectAndLimit is a test function that tests the SelectAndLimit functionality.
+//
+// It truncates the TestTable, inserts data into it, performs a select query with specific columns and a limit of 15,
+// and scans the results into a slice of DataStruct.
+// Finally, it asserts that the expected data is equal to the scanned data, and that the length of the testStructs slice is 2.
 func TestSelectAndLimit(t *testing.T) {
 	_, err := db.Truncate(TestTable)
 	require.NoError(t, err)
@@ -120,26 +131,35 @@ func TestInsert(t *testing.T) {
 	require.NoError(t, err)
 }
 
-var batchData = []map[string]interface{}{
-	0: {"foo": "foo foo foo", "bar": "bar bar bar", "baz": int64(123)},
-	1: {"foo": "foo foo foo foo", "bar": "bar bar bar bar", "baz": int64(1234)},
-	2: {"foo": "foo foo foo foo foo", "bar": "bar bar bar bar bar", "baz": int64(12345)},
+var batchDataStruct = []DataStruct{
+	{Foo: "foo foo foo", Bar: "bar bar bar", Baz: &baz},
+	{Foo: "foo foo foo foo", Bar: "bar bar bar bar", Baz: &baz},
+	{Foo: "foo foo foo foo foo", Bar: "bar bar bar bar bar", Baz: &baz},
 }
 
 func TestInsertBatchSelectMultiple(t *testing.T) {
 	_, err := db.Truncate(TestTable)
 	require.NoError(t, err)
 
-	err = db.Table(TestTable).InsertBatch(batchData)
+	err = db.Table(TestTable).InsertBatch(batchDataStruct)
 	require.NoError(t, err)
 
-	res, err := db.Table(TestTable).Select("foo", "bar", "baz").OrderBy("foo", "ASC").Get()
+	dataStruct := DataStruct{}
+	var dataStructs []DataStruct
+	err = db.Table(TestTable).Select("foo", "bar", "baz").OrderBy("foo", "ASC").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, &dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, dataStruct)
+			return nil
+		})
 	require.NoError(t, err)
 
-	for mapKey, mapVal := range batchData {
-		for k, mV := range mapVal {
-			require.Equal(t, res[mapKey][k], mV)
-		}
+	for mapKey, dStruct := range dataStructs {
+		require.Equal(t, batchDataStruct[mapKey], dStruct)
 	}
 
 	_, err = db.Truncate(TestTable)
@@ -152,7 +172,7 @@ func TestWhereOnly(t *testing.T) {
 	_, err := db.Truncate(TestTable)
 	require.NoError(t, err)
 
-	err = db.Table(TestTable).InsertBatch(batchData)
+	err = db.Table(TestTable).InsertBatch(batchDataStruct)
 	require.NoError(t, err)
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).Get()
 	require.NoError(t, err)
@@ -169,7 +189,7 @@ func TestWhereAndOr(t *testing.T) {
 	_, err := db.Truncate(TestTable)
 	require.NoError(t, err)
 
-	err = db.Table(TestTable).InsertBatch(batchData)
+	err = db.Table(TestTable).InsertBatch(batchDataStruct)
 	require.NoError(t, err)
 	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
 	require.NoError(t, err)
@@ -180,22 +200,30 @@ func TestWhereAndOr(t *testing.T) {
 	require.NoError(t, err)
 }
 
-//var users = `create table users (id serial primary key, name varchar(128) not null, points integer)`
-//
-//var posts = `create table posts (id serial primary key, title varchar(128) not null, post text, user_id integer, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`
-
-var batchUsers = []map[string]interface{}{
-	0: {"id": int64(1), "name": "Alex Shmidt", "points": int64(123)},
-	1: {"id": int64(2), "name": "Darth Vader", "points": int64(1234)},
-	2: {"id": int64(3), "name": "Dead Beaf", "points": int64(12345)},
-	3: {"id": int64(4), "name": "Dead Beaf", "points": int64(12345)},
+var batchUsers = []DataStructUser{
+	{ID: int64(1), Name: "Alex Shmidt", Points: int64(123)},
+	{ID: int64(2), Name: "Darth Vader", Points: int64(1234)},
+	{ID: int64(3), Name: "Dead Beaf", Points: int64(12345)},
+	{ID: int64(4), Name: "Dead Beaf", Points: int64(12345)},
 }
 
-var batchPosts = []map[string]interface{}{
-	0: {"id": int64(1), "title": "Lorem ipsum dolor sit amet,", "post": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "user_id": int64(1), "updated_at": "2086-09-09 18:27:40"},
-	1: {"id": int64(2), "title": "Sed ut perspiciatis unde omnis iste natus", "post": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.", "user_id": int64(2), "updated_at": "2087-09-09 18:27:40"},
-	2: {"id": int64(3), "title": "Ut enim ad minima veniam", "post": "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?", "user_id": int64(3), "updated_at": "2088-09-09 18:27:40"},
-	3: {"id": int64(4), "title": "Lorem ipsum dolor sit amet,", "post": nil, "user_id": nil, "updated_at": "2086-09-09 18:27:40"},
+type DataStructPost struct {
+	ID        int64
+	Title     string
+	Post      *string
+	UserID    *int64    `db:"user_id"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+var userID, userIDTwo, userIDThree = int64(1), int64(2), int64(3)
+var post = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+var timeNow = time.Now()
+
+var batchPosts = []DataStructPost{
+	{ID: 1, Title: "Lorem ipsum dolor sit amet,", Post: &post, UserID: &userID, UpdatedAt: timeNow},
+	{ID: 2, Title: "Sed ut perspiciatis unde omnis iste natus", Post: &post, UserID: &userIDTwo, UpdatedAt: timeNow},
+	{ID: 3, Title: "Ut enim ad minima veniam", Post: &post, UserID: &userIDThree, UpdatedAt: timeNow},
+	{ID: 4, Title: "Lorem ipsum dolor sit amet,", Post: nil, UserID: nil, UpdatedAt: timeNow},
 }
 
 type DataStructUser struct {
@@ -218,13 +246,14 @@ func TestJoins(t *testing.T) {
 	_, err = db.Truncate(PostsTable)
 	require.NoError(t, err)
 
-	var posts []map[string]interface{}
+	var posts []DataStructPost
 	for _, v := range batchUsersStruct {
 		id, err := db.Table(UsersTable).InsertGetId(v)
 		require.NoError(t, err)
 
-		posts = append(posts, map[string]interface{}{
-			"title": "ttl", "post": "foo bar baz", "user_id": id,
+		iID := int64(id)
+		posts = append(posts, DataStructPost{
+			ID: v.ID, Title: "ttl", Post: &post, UserID: &iID,
 		})
 	}
 
@@ -236,8 +265,8 @@ func TestJoins(t *testing.T) {
 	require.NoError(t, err)
 
 	for k, val := range res {
-		require.Equal(t, val["name"], batchUsers[k]["name"])
-		require.Equal(t, val["user_id"], batchUsers[k]["id"])
+		require.Equal(t, val["name"], batchUsers[k].Name)
+		require.Equal(t, val["user_id"], batchUsers[k].ID)
 	}
 
 	_, err = db.Truncate(UsersTable)
@@ -605,7 +634,7 @@ func TestDB_Pluck(t *testing.T) {
 
 	for k, v := range res {
 		resVal := v.(string)
-		require.Equal(t, batchUsers[k]["name"], resVal)
+		require.Equal(t, batchUsers[k].Name, resVal)
 	}
 
 	_, err = db.Table("nonexistent").Pluck("name")
@@ -628,8 +657,8 @@ func TestDB_PluckMap(t *testing.T) {
 		for key, value := range m {
 			keyVal := key.(string)
 			valueVal := value.(int64)
-			require.Equal(t, batchUsers[k]["name"], keyVal)
-			require.Equal(t, batchUsers[k]["points"], valueVal)
+			require.Equal(t, batchUsers[k].Name, keyVal)
+			require.Equal(t, batchUsers[k].Points, valueVal)
 		}
 	}
 
@@ -690,7 +719,7 @@ func TestDB_Avg(t *testing.T) {
 
 	var cntBatch float64
 	for _, v := range batchUsers {
-		cntBatch += float64(v["points"].(int64)) / float64(len(batchUsers))
+		cntBatch += float64(v.Points) / float64(len(batchUsers))
 	}
 
 	require.Equalf(t, cntBatch, avg, "want: %d, got: %d", cntBatch, avg)
@@ -715,7 +744,7 @@ func TestDB_MinMax(t *testing.T) {
 	var max float64
 	var min = float64(123456)
 	for _, v := range batchUsers {
-		val := float64(v["points"].(int64))
+		val := float64(v.Points)
 		if val > max {
 			max = val
 		}
@@ -743,7 +772,7 @@ func TestDB_Sum(t *testing.T) {
 
 	var cntBatch float64
 	for _, v := range batchUsers {
-		cntBatch += float64(v["points"].(int64))
+		cntBatch += float64(v.Points)
 	}
 
 	require.Equalf(t, cntBatch, sum, "want: %d, got: %d", cntBatch, sum)
@@ -843,7 +872,7 @@ func TestDB_OrderByRaw(t *testing.T) {
 	res, err := db.Table(PostsTable).Select("title").OrderByRaw("updated_at - created_at DESC").First()
 	require.NoError(t, err)
 
-	require.Equal(t, batchPosts[2]["title"], res["title"])
+	require.Equal(t, batchPosts[0].Title, res["title"])
 
 	_, err = db.Truncate(PostsTable)
 	require.NoError(t, err)
@@ -861,7 +890,7 @@ func TestDB_SelectRaw(t *testing.T) {
 
 	var sum int64
 	for _, v := range batchUsers {
-		sum += v["points"].(int64)
+		sum += v.Points
 	}
 	require.Equal(t, sum, res["pts"])
 
@@ -876,12 +905,14 @@ func TestDB_AndWhereBetween(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).OrWhereBetween("points", 123456, 67891023).AndWhereNotBetween("points", 12, 23).First()
+	res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).
+		OrWhereBetween("points", 123456, 67891023).AndWhereNotBetween("points", 12, 23).First()
 	require.NoError(t, err)
 
 	require.Equal(t, "Darth Vader", res["name"])
 
-	res, err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 12, 123).AndWhereBetween("points", 1233, 12345).OrWhereNotBetween("points", 12, 23).First()
+	res, err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 12, 123).
+		AndWhereBetween("points", 1233, 12345).OrWhereNotBetween("points", 12, 23).First()
 	require.NoError(t, err)
 
 	require.Equal(t, "Alex Shmidt", res["name"])
@@ -1061,6 +1092,9 @@ func TestDB_FullOuterJoin(t *testing.T) {
 	_, err := db.Truncate(UsersTable)
 	require.NoError(t, err)
 
+	_, err = db.Truncate(PostsTable)
+	require.NoError(t, err)
+
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
@@ -1092,9 +1126,7 @@ func TestDB_Chunk(t *testing.T) {
 	require.NoError(t, err)
 	var initialSum int64
 	for _, mm := range batchUsers {
-		if val, ok := mm["points"]; ok {
-			initialSum += val.(int64)
-		}
+		initialSum += mm.Points
 	}
 	require.Equal(t, sumOfPoints, initialSum)
 
@@ -1122,7 +1154,7 @@ func TestDB_ChunkFalse(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, sumOfPoints, batchUsers[0]["points"].(int64))
+	require.Equal(t, sumOfPoints, batchUsers[0].Points)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
