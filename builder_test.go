@@ -546,11 +546,12 @@ func TestDB_First(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	res, err := db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
+	dataStruct := &DataStruct{}
+	err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First(dataStruct)
 	require.NoError(t, err)
-	require.Equal(t, res["baz"], int64(1234))
+	require.Equal(t, *dataStruct.Baz, int64(1234))
 
-	_, err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("fo", "desc").First()
+	err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("fo", "desc").First(dataStruct)
 	require.Error(t, err)
 
 	_, err = db.Truncate(TestTable)
@@ -564,9 +565,12 @@ func TestDB_Find(t *testing.T) {
 	id, err := db.Table(TestTable).InsertGetId(data)
 	require.NoError(t, err)
 
-	res, err := db.Table(TestTable).Find(id)
+	dataStruct := &DataStructID{}
+	err = db.Table(TestTable).Find(dataStruct, id)
 	require.NoError(t, err)
-	require.Equal(t, res["id"], int64(id))
+	require.Equal(t, dataStruct.Foo, data.Foo)
+	require.Equal(t, dataStruct.Bar, data.Bar)
+	require.Equal(t, dataStruct.Baz, *data.Baz)
 
 	_, err = db.Truncate(TestTable)
 	require.NoError(t, err)
@@ -579,11 +583,12 @@ func TestDB_WhereExists(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, er := db.Table(UsersTable).Select("name").WhereExists(
+	dataStruct := &DataStructUser{}
+	er := db.Table(UsersTable).Select("name").WhereExists(
 		db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)),
-	).First()
+	).First(dataStruct)
 	require.NoError(t, er)
-	require.Equal(t, TestUserName, res["name"])
+	require.Equal(t, TestUserName, dataStruct.Name)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -596,11 +601,12 @@ func TestDB_WhereNotExists(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, er := db.Table(UsersTable).Select("name").WhereNotExists(
+	dataStruct := &DataStructUser{}
+	er := db.Table(UsersTable).Select("name").WhereNotExists(
 		db.Table(UsersTable).Select("name").Where("points", ">=", int64(12345)),
-	).First()
+	).First(dataStruct)
 	require.NoError(t, er)
-	require.Equal(t, TestUserName, res["name"])
+	require.Equal(t, TestUserName, dataStruct.Name)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -612,11 +618,13 @@ func TestDB_Value(t *testing.T) {
 
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
-	res, err := db.Table(UsersTable).OrderBy("points", "desc").Value("name")
-	require.NoError(t, err)
-	require.Equal(t, TestUserName, res)
 
-	_, err = db.Table(UsersTable).OrderBy("poin", "desc").Value("name")
+	dataStruct := &DataStructUser{}
+	err = db.Table(UsersTable).OrderBy("points", "desc").Value(dataStruct, "name")
+	require.NoError(t, err)
+	require.Equal(t, TestUserName, dataStruct.Name)
+
+	err = db.Table(UsersTable).OrderBy("poin", "desc").Value(dataStruct, "name")
 	require.Error(t, err)
 
 	_, err = db.Truncate(UsersTable)
@@ -869,10 +877,11 @@ func TestDB_OrderByRaw(t *testing.T) {
 	err = db.Table(PostsTable).InsertBatch(batchPosts)
 	require.NoError(t, err)
 
-	res, err := db.Table(PostsTable).Select("title").OrderByRaw("updated_at - created_at DESC").First()
+	dataStruct := &DataStructPost{}
+	err = db.Table(PostsTable).Select("title").OrderByRaw("updated_at - created_at DESC").First(dataStruct)
 	require.NoError(t, err)
 
-	require.Equal(t, batchPosts[0].Title, res["title"])
+	require.Equal(t, batchPosts[0].Title, dataStruct.Title)
 
 	_, err = db.Truncate(PostsTable)
 	require.NoError(t, err)
@@ -885,14 +894,15 @@ func TestDB_SelectRaw(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).SelectRaw("SUM(points) as pts").First()
+	dataStruct := &DataStructUser{}
+	err = db.Table(UsersTable).SelectRaw("SUM(points) as points").First(dataStruct)
 	require.NoError(t, err)
 
 	var sum int64
 	for _, v := range batchUsers {
 		sum += v.Points
 	}
-	require.Equal(t, sum, res["pts"])
+	require.Equal(t, sum, dataStruct.Points)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -905,17 +915,17 @@ func TestDB_AndWhereBetween(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).
-		OrWhereBetween("points", 123456, 67891023).AndWhereNotBetween("points", 12, 23).First()
+	dataStruct := &DataStructUser{}
+	err = db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).
+		OrWhereBetween("points", 123456, 67891023).AndWhereNotBetween("points", 12, 23).
+		First(dataStruct)
 	require.NoError(t, err)
+	require.Equal(t, "Darth Vader", dataStruct.Name)
 
-	require.Equal(t, "Darth Vader", res["name"])
-
-	res, err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 12, 123).
-		AndWhereBetween("points", 1233, 12345).OrWhereNotBetween("points", 12, 23).First()
+	err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 12, 123).
+		AndWhereBetween("points", 1233, 12345).OrWhereNotBetween("points", 12, 23).First(dataStruct)
 	require.NoError(t, err)
-
-	require.Equal(t, "Alex Shmidt", res["name"])
+	require.Equal(t, "Alex Shmidt", dataStruct.Name)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -1257,7 +1267,9 @@ func TestDB_FirsNoRecordsErr(t *testing.T) {
 	_, err := db.Truncate(UsersTable)
 	require.NoError(t, err)
 
-	_, err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").OrderBy("foo", "desc").First()
+	dataStruct := &DataStructUser{}
+	err = db.Table(TestTable).Select("baz").OrderBy("baz", "desc").
+		OrderBy("foo", "desc").First(dataStruct)
 	require.Errorf(t, err, "no records were produced by query: %s")
 
 	_, err = db.Truncate(UsersTable)

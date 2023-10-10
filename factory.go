@@ -252,7 +252,8 @@ func (r *DB) Next(rows *sql.Rows, src any) error {
 }
 
 func setResourceValue(resource reflect.Value, src any, col string, value any) {
-	if !resource.FieldByName(col).IsValid() { // try to get field by db: tag
+	upperCaseFieldName := cases.Upper(language.English).String(col)
+	if !resource.FieldByName(col).IsValid() && !resource.FieldByName(upperCaseFieldName).IsValid() { // try to get field by db: tag
 		fields := structs.Fields(src)
 		for i, f := range fields {
 			tag := f.Tag("db")
@@ -263,7 +264,12 @@ func setResourceValue(resource reflect.Value, src any, col string, value any) {
 		}
 	}
 
-	setValue(resource.FieldByName(col), value)
+	colName := col
+	if resource.FieldByName(upperCaseFieldName).IsValid() {
+		colName = upperCaseFieldName
+	}
+
+	setValue(resource.FieldByName(colName), value)
 }
 
 func setValue(field reflect.Value, val any) {
@@ -298,8 +304,11 @@ func setValue(field reflect.Value, val any) {
 func validateFields(resource reflect.Value, src any, columns []string) error {
 	for _, col := range columns {
 		foundColByTag := false
+		// standard fields parse
 		fieldName := cases.Title(language.English).String(col)
-		if !resource.FieldByName(fieldName).IsValid() {
+		// uppercase letters fields parse e.g.: ID, URL etc
+		upperCaseFieldName := cases.Upper(language.English).String(col)
+		if !resource.FieldByName(fieldName).IsValid() && !resource.FieldByName(upperCaseFieldName).IsValid() {
 			fields := structs.Fields(src)
 			for _, f := range fields {
 				tag := f.Tag("db")

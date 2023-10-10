@@ -7,36 +7,28 @@ import (
 )
 
 // First getting the 1st row of query
-func (r *DB) First() (map[string]interface{}, error) {
-	res, err := r.Get()
+func (r *DB) First(src any) error {
+	err := r.ScanStruct(src)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if len(res) > 0 {
-		return res[0], nil
-	}
-	return nil, fmt.Errorf("no records were produced by query: %s", r.Builder.buildSelect())
+	return nil
 }
 
 // Value gets the value of column in first query resulting row
-func (r *DB) Value(column string) (val interface{}, err error) {
-	r.Select(column)
-	res, err := r.First()
+func (r *DB) Value(src any, column string) error {
+	err := r.Select(column).ScanStruct(src)
 	if err != nil {
-		return
+		return err
 	}
 
-	if val, ok := res[column]; ok {
-		return val, err
-	}
-
-	return
+	return nil
 }
 
 // Find retrieves a single row by it's id column value
-func (r *DB) Find(id uint64) (map[string]interface{}, error) {
-	return r.Where("id", "=", id).First()
+func (r *DB) Find(src any, id uint64) error {
+	return r.Where("id", "=", id).First(src)
 }
 
 // Pluck getting values of a particular column and place them into slice
