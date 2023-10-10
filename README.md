@@ -85,7 +85,7 @@ func main() {
 ### InRandomOrder
 
 ```go
-res, err = db.Table("users").Select("name", "post", "user_id").InRandomOrder().ScanStruct(&dataStruct)
+err = db.Table("users").Select("name", "post", "user_id").InRandomOrder().ScanStruct(dataStruct)
 ```
 
 ## GroupBy / Having
@@ -94,7 +94,7 @@ The GroupBy and Having methods may be used to group the query results.
 The having method's signature is similar to that of the where method:
 
 ```go
-res, err := db.table("users").GroupBy("account_id").Having("account_id", ">", 100).ScanStruct(&dataStruct)
+err = db.table("users").GroupBy("account_id").Having("account_id", ">", 100).ScanStruct(dataStruct)
 ```
 
 ## Where, AndWhere, OrWhere clauses
@@ -106,7 +106,7 @@ The second argument is an operator, which can be any of the database's supported
 Finally, the third argument is the value to evaluate against the column.
 
 ```go
-res, err := db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123)..ScanStruct(&dataStruct)
+err = db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123)..ScanStruct(dataStruct)
 ```
 
 You may chain where constraints together as well as add or clauses to the query.
@@ -117,7 +117,7 @@ The orWhere method accepts the same arguments as the where method.
 The whereIn method verifies that a given column's value is contained within the given slice:
 
 ```go
-res, err := db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name", []string{"John", "Paul"})..ScanStruct(&dataStruct)
+err = db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name", []string{"John", "Paul"}).ScanStruct(dataStruct)
 ```
 
 ## WhereNull / WhereNotNull
@@ -125,7 +125,7 @@ res, err := db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name",
 The whereNull method verifies that the value of the given column is NULL:
 
 ```go
-res, err := db.Table("posts").WhereNull("points").OrWhereNotNull("title")..ScanStruct(&dataStruct)
+err = db.Table("posts").WhereNull("points").OrWhereNotNull("title")..ScanStruct(dataStruct)
 ```
 
 ## Left / Right / Cross / Inner / Left Outer Joins
@@ -137,7 +137,7 @@ while the remaining arguments specify the column constraints for the join.
 You can even join to multiple tables in a single query:
 
 ```go
-res, err := db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").EachToStruct(func(rows *sql.Rows) error {
+err = db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "users.id", "=", "posts.user_id").EachToStruct(func(rows *sql.Rows) error {
     err = db.Next(rows, &dataStruct)
     if err != nil {
         return err
@@ -155,7 +155,7 @@ The Insert/InsertBatch methods accept a structure (or slice of structs) of colum
 
 ```go
 // insert without getting id
-err := db.Table("table1").Insert(DataStruct{
+err = db.Table("table1").Insert(DataStruct{
     Foo: "foo foo foo",
     Bar: "bar bar bar",
     Baz: &baz,
@@ -169,7 +169,7 @@ id, err := db.Table("table1").InsertGetId(DataStruct{
 })
 
 // batch insert 
-err := db.Table("table1").InsertBatch([]DataStruct{
+err = db.Table("table1").InsertBatch([]DataStruct{
     {Foo: "foo foo foo", Bar: "bar bar bar", Baz: &baz},
     {Foo: "foo foo foo foo", Bar: "bar bar bar bar", Baz: &baz},
     {Foo: "foo foo foo foo foo", Bar: "bar bar bar bar bar", Baz: &baz},
@@ -232,7 +232,7 @@ For example, you may create an initial query and use the union method to union i
 
 ```go
 union := db.Table("posts").Select("title", "likes").Union()
-res, err := union.Table("users").Select("name", "points").ScanStruct(&testStruct)
+res, err := union.Table("users").Select("name", "points").ScanStruct(dataStruct)
 
 // or if UNION ALL is of need
 // union := db.Table("posts").Select("title", "likes").UnionAll()
@@ -246,7 +246,7 @@ or committed if everything is ok:
 
 ```go
 err := db.InTransaction(func () (interface{}, error) {
-    return db.Table("users").Select("name", "post", "user_id").ScanStruct(&testStruct)
+    return db.Table("users").Select("name", "post", "user_id").ScanStruct(dataStruct)
 })
 ```
 
@@ -282,39 +282,38 @@ If you just need to retrieve a single row from the database table, you may use t
 This method will return a single `map[string]interface{}`:
 
 ```go
-post, err := db.Table("posts").Select("title").OrderBy("created_at", "desc").First()
+err = db.Table("posts").Select("title").OrderBy("created_at", "desc").First(dataStruct)
 
-// usage ex: post["title"]
+// usage ex: dataStruct.Title
 ```
 
 If you don't even need an entire row, you may extract a single value from a record using the `Value` method.
 This method will return the value of the column directly:
 
 ```go
-res, err := db.Table("users").OrderBy("points", "desc").Value("name")
+err = db.Table("users").OrderBy("points", "desc").Value(dataStruct, "name")
 
-// res -> "Alex Shmidt"
+// dataStruct.Name -> "Alex Shmidt"
 ```
 
 To retrieve a single row by its id column value, use the `find` method:
 
 ```go
-user, err := db.Table("users").Find(id)
+user, err := db.Table("users").Find(dataStruct, id)
 
-// user["id"], user["name"], user["email"] etc
+// dataStruct.ID, dataStruct.Name, dataStruct.Email etc
 ```
 
 ## WhereExists / WhereNotExists
 
 The whereExists method allows you to write where exists SQL clauses.
 The whereExists method accepts a *DB argument,
-which will receive a query builder instance allowing you to define the query that should be placed inside of the "
-exists" clause:
+which will receive a query builder instance allowing you to define the query that should be placed inside the "exists" clause:
 
 ```go
-res, er := db.Table("users").Select("name").WhereExists(
+err = db.Table("users").Select("name").WhereExists(
     db.Table("users").Select("name").Where("points", ">=", int64(12345)),
-).First()
+).First(dataStruct)
 ```
 
 Any query that is of need to build one can place inside `WhereExists` clause/func.
@@ -324,13 +323,13 @@ Any query that is of need to build one can place inside `WhereExists` clause/fun
 The whereBetween func verifies that a column's value is between two values:
 
 ```go
-res, err := db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).ScanStruct(&testStruct)
+err = db.Table(UsersTable).Select("name").WhereBetween("points", 1233, 12345).ScanStruct(&testStruct)
 ```
 
 The whereNotBetween func verifies that a column's value lies outside of two values:
 
 ```go
-res, err := db.Table(UsersTable).Select("name").WhereNotBetween("points", 123, 123456).ScanStruct(&testStruct)
+err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 123, 123456).ScanStruct(&testStruct)
 ```
 
 ## Determining If Records Exist
