@@ -28,74 +28,6 @@ var (
 
 type EachToStructFunc func(rows *sql.Rows) error
 
-// Get builds all sql statements chained before and executes query collecting data to the slice
-// Deprecated: this method will no longer be used in future releases, because of ScanStruct and EachToStruct replacement
-func (r *DB) Get() ([]map[string]any, error) {
-	bldr := r.Builder
-	if bldr.table == "" {
-		return nil, errTableCallBeforeOp
-	}
-
-	query := ""
-	if len(bldr.union) > 0 { // got union - need different logic to glue
-		for _, uBuilder := range bldr.union {
-			query += uBuilder + " UNION "
-
-			if bldr.isUnionAll {
-				query += "ALL "
-			}
-		}
-
-		query += bldr.buildSelect()
-		// clean union (all) after ensuring selects are built
-		r.Builder.union = []string{}
-		r.Builder.isUnionAll = false
-	} else { // std bldr
-		query = bldr.buildSelect()
-	}
-
-	rows, err := r.Sql().Query(query, prepareValues(r.Builder.whereBindings)...)
-	if err != nil {
-		return nil, err
-	}
-
-	columns, _ := rows.Columns()
-	count := len(columns)
-	values := make([]any, count)
-	valuePtrs := make([]any, count)
-
-	// collecting data from struct with fields
-	var res []map[string]any
-
-	for rows.Next() {
-		collect := make(map[string]any, count)
-
-		for i := range columns {
-			valuePtrs[i] = &values[i]
-		}
-
-		err = rows.Scan(valuePtrs...)
-		if err != nil {
-			return nil, err
-		}
-
-		for i, col := range columns {
-			val := values[i]
-
-			b, ok := val.([]byte)
-			if ok {
-				collect[col] = string(b)
-			} else {
-				collect[col] = val
-			}
-		}
-
-		res = append(res, collect)
-	}
-
-	return res, nil
-}
-
 // ScanStruct scans query into specific struct
 func (r *DB) ScanStruct(src any) error {
 	if reflect.ValueOf(src).IsNil() {
@@ -275,7 +207,9 @@ func setResourceValue(resource reflect.Value, src any, col string, value any) {
 func setValue(field reflect.Value, val any) {
 	if field.Kind() == reflect.Ptr {
 		newVal := reflect.New(field.Type().Elem())
-		newVal.Elem().Set(reflect.ValueOf(val))
+		if val != nil {
+			newVal.Elem().Set(reflect.ValueOf(val))
+		}
 		field.Set(newVal)
 
 		return
@@ -319,7 +253,7 @@ func validateFields(resource reflect.Value, src any, columns []string) error {
 			}
 
 			if !foundColByTag {
-				return fmt.Errorf("field %s not found in struct", fieldName)
+				return fmt.Errorf("field '%s' not found in struct", fieldName)
 			}
 		}
 	}
@@ -632,6 +566,30 @@ func getColumn(structField reflect.StructField) string {
 	}
 
 	return col
+}
+
+func getFieldValue(src any, col string) any {
+	fieldTitleName := cases.Title(language.English).String(col)
+	fieldUpperName := cases.Upper(language.English).String(col)
+
+	resource := reflect.ValueOf(src)
+	if resource.FieldByName(fieldTitleName).IsValid() {
+		return resource.FieldByName(fieldTitleName).Interface()
+	}
+
+	if !resource.FieldByName(fieldUpperName).IsValid() {
+		return resource.FieldByName(fieldUpperName).Interface()
+	}
+
+	resourceType := reflect.TypeOf(src)
+	for i := 0; i < resourceType.NumField(); i++ {
+		f := resourceType.Field(i)
+		if f.Tag.Get("db") == col {
+			return resource.Field(i).Interface()
+		}
+	}
+
+	return nil
 }
 
 // InsertBatch inserts multiple rows based on transaction
