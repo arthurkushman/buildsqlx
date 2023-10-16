@@ -1,8 +1,10 @@
 package buildsqlx
 
 import (
+	"database/sql"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 )
 
@@ -110,7 +112,7 @@ func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
 
 // Chunk run queries by chinks by passing user-land function with an ability to stop execution when needed
 // by returning false and proceed to execute queries when return true
-func (r *DB) Chunk(amount int64, fn func(rows []map[string]interface{}) bool) error {
+func (r *DB) Chunk(src any, amount int64, fn func(rows []any) bool) error {
 	cols := r.Builder.columns
 	cnt, err := r.Count()
 	if err != nil {
@@ -123,11 +125,24 @@ func (r *DB) Chunk(amount int64, fn func(rows []map[string]interface{}) bool) er
 	}
 
 	if cnt < amount {
-		res, err := r.Get()
+		var structRows []any
+		err = r.EachToStruct(func(rows *sql.Rows) error {
+			err = r.Next(rows, src)
+			if err != nil {
+				return err
+			}
+
+			v := reflect.ValueOf(src).Elem().Interface()
+			structRows = append(structRows, v)
+
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-		fn(res) // execute all resulting records
+
+		fn(structRows) // execute all resulting records
+
 		return nil
 	}
 
@@ -135,14 +150,27 @@ func (r *DB) Chunk(amount int64, fn func(rows []map[string]interface{}) bool) er
 	c := int64(math.Ceil(float64(cnt / amount)))
 	var i int64
 	for i = 0; i < c; i++ {
-		rows, err := r.Offset(i * amount).Limit(amount).Get() // by 100 rows from 100 x n
+		var structRows []any
+		err = r.Offset(i * amount).Limit(amount).EachToStruct(func(rows *sql.Rows) error {
+			err = r.Next(rows, src)
+			if err != nil {
+				return err
+			}
+
+			v := reflect.ValueOf(src).Elem().Interface()
+			structRows = append(structRows, v)
+
+			return nil
+		}) // by 100 rows from 100 x n
 		if err != nil {
 			return err
 		}
-		res := fn(rows)
+
+		res := fn(structRows)
 		if !res { // stop an execution when false returned by user
 			break
 		}
 	}
+
 	return nil
 }
