@@ -371,9 +371,10 @@ func (r *DB) Rename(from, to string) (sql.Result, error) {
 // WhereIn appends IN (val1, val2, val3...) stmt to WHERE clause
 func (r *DB) WhereIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
-	if err != nil {
-		return nil
+	if err != nil { // don't want the code run on prod falling just because user didn't pass slice as `in` param
+		log.Panicln(err)
 	}
+
 	r.buildWhere("", field, "IN", ins)
 	return r
 }
@@ -382,8 +383,9 @@ func (r *DB) WhereIn(field string, in any) *DB {
 func (r *DB) WhereNotIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
-		return nil
+		log.Panicln(err)
 	}
+
 	r.buildWhere("", field, "NOT IN", ins)
 	return r
 }
@@ -392,8 +394,9 @@ func (r *DB) WhereNotIn(field string, in any) *DB {
 func (r *DB) OrWhereIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
-		return nil
+		log.Panicln(err)
 	}
+
 	r.buildWhere("OR", field, "IN", ins)
 	return r
 }
@@ -402,8 +405,9 @@ func (r *DB) OrWhereIn(field string, in any) *DB {
 func (r *DB) OrWhereNotIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
-		return nil
+		log.Panicln(err)
 	}
+
 	r.buildWhere("OR", field, "NOT IN", ins)
 	return r
 }
@@ -412,8 +416,9 @@ func (r *DB) OrWhereNotIn(field string, in any) *DB {
 func (r *DB) AndWhereIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
-		return nil
+		log.Panicln(err)
 	}
+
 	r.buildWhere("AND", field, "IN", ins)
 	// r.buildWhere("AND", field, "IN", prepareSlice(ins))
 	return r
@@ -423,8 +428,9 @@ func (r *DB) AndWhereIn(field string, in any) *DB {
 func (r *DB) AndWhereNotIn(field string, in any) *DB {
 	ins, err := interfaceToSlice(in)
 	if err != nil {
-		return nil
+		log.Panicln(err)
 	}
+
 	r.buildWhere("AND", field, "NOT IN", ins)
 	return r
 }
@@ -457,26 +463,6 @@ func (r *DB) AndWhereNull(field string) *DB {
 // AndWhereNotNull appends fieldName IS NOT NULL stmt to WHERE clause
 func (r *DB) AndWhereNotNull(field string) *DB {
 	return r.buildWhere(sqlOperatorAnd, field, sqlOperatorIs, sqlSpecificValueNotNull)
-}
-
-// prepares slice for Where bindings, IN/NOT IN etc
-func prepareSlice(in []any) (out []string) {
-	for _, value := range in {
-		switch v := value.(type) {
-		case string:
-			out = append(out, v)
-		case int:
-			out = append(out, strconv.FormatInt(int64(v), 10))
-		case float64:
-			out = append(out, fmt.Sprintf("%g", v))
-		case int64:
-			out = append(out, strconv.FormatInt(v, 10))
-		case uint64:
-			out = append(out, strconv.FormatUint(v, 10))
-		}
-	}
-
-	return
 }
 
 // From prepares sql stmt to set data from another table, ex.:

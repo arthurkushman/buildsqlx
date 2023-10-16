@@ -433,13 +433,16 @@ If you need to work with thousands of database records, consider using the chunk
 This method retrieves a small chunk of the results at a time and feeds each chunk into a closure for processing.
 
 ```go
-err = db.Table("user_achievements").Select("points").Where("id", "=", id).Chunk(100, func (users []map[string]interface{}) bool {
-    for _, m := range users {
-        if val, ok := m["points"];ok {
-            pointsCalc += diffFormula(val.(int64))
-        }
-    // or you can return false here to stop running chunks 
+var sumOfPoints int64
+dataStruct := &DataStructUser{}
+err = db.Table(UsersTable).Select("name", "points").Chunk(dataStruct, 100, func(users []any) bool {
+    for _, v := range users {
+        user := v.(DataStructUser) 
+		// your code goes here e.g.:
+        sumOfPoints += user.Points
     }
+	
+    // or you can return false here to stop running chunks 
     return true
 })
 ```

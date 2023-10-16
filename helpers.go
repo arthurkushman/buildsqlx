@@ -9,7 +9,7 @@ func interfaceToSlice(slice interface{}) ([]interface{}, error) {
 	var err error
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
-		err = errors.New("interfaceToSlice() given a non-slice type")
+		return nil, errors.New("interfaceToSlice() given a non-slice type")
 	}
 
 	ret := make([]interface{}, s.Len())
