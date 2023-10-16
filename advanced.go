@@ -44,6 +44,7 @@ func (r *DB) Pluck(column string) (val []interface{}, err error) {
 	for k, m := range res {
 		val[k] = m[column]
 	}
+
 	return
 }
 
@@ -59,18 +60,20 @@ func (r *DB) PluckMap(colKey, colValue string) (val []map[interface{}]interface{
 		val[k] = make(map[interface{}]interface{})
 		val[k][m[colKey]] = m[colValue]
 	}
+
 	return
 }
 
 // Exists checks whether conditional rows are existing (returns true) or not (returns false)
 func (r *DB) Exists() (exists bool, err error) {
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return false, errTableCallBeforeOp
 	}
 
-	query := `SELECT EXISTS(SELECT 1 FROM "` + builder.table + `" ` + builder.buildClauses() + `)`
+	query := `SELECT EXISTS(SELECT 1 FROM "` + bldr.table + `" ` + bldr.buildClauses() + `)`
 	err = r.Sql().QueryRow(query, prepareValues(r.Builder.whereBindings)...).Scan(&exists)
+
 	return
 }
 
@@ -80,6 +83,7 @@ func (r *DB) DoesntExists() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return !ex, nil
 }
 
@@ -125,18 +129,7 @@ func (r *DB) Chunk(src any, amount int64, fn func(rows []any) bool) error {
 	}
 
 	if cnt < amount {
-		var structRows []any
-		err = r.EachToStruct(func(rows *sql.Rows) error {
-			err = r.Next(rows, src)
-			if err != nil {
-				return err
-			}
-
-			v := reflect.ValueOf(src).Elem().Interface()
-			structRows = append(structRows, v)
-
-			return nil
-		})
+		structRows, err := r.eachToStructRows(src, 0, 0)
 		if err != nil {
 			return err
 		}
@@ -148,20 +141,8 @@ func (r *DB) Chunk(src any, amount int64, fn func(rows []any) bool) error {
 
 	// executing chunks amount < cnt
 	c := int64(math.Ceil(float64(cnt / amount)))
-	var i int64
-	for i = 0; i < c; i++ {
-		var structRows []any
-		err = r.Offset(i * amount).Limit(amount).EachToStruct(func(rows *sql.Rows) error {
-			err = r.Next(rows, src)
-			if err != nil {
-				return err
-			}
-
-			v := reflect.ValueOf(src).Elem().Interface()
-			structRows = append(structRows, v)
-
-			return nil
-		}) // by 100 rows from 100 x n
+	for i := int64(0); i < c; i++ {
+		structRows, err := r.eachToStructRows(src, i*amount, amount)
 		if err != nil {
 			return err
 		}
@@ -173,4 +154,25 @@ func (r *DB) Chunk(src any, amount int64, fn func(rows []any) bool) error {
 	}
 
 	return nil
+}
+
+func (r *DB) eachToStructRows(src any, offset, limit int64) ([]any, error) {
+	var structRows []any
+	if limit > 0 {
+		r.Offset(offset).Limit(limit)
+	}
+
+	err := r.EachToStruct(func(rows *sql.Rows) error {
+		err := r.Next(rows, src)
+		if err != nil {
+			return err
+		}
+
+		v := reflect.ValueOf(src).Elem().Interface()
+		structRows = append(structRows, v)
+
+		return nil
+	})
+
+	return structRows, err
 }

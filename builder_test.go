@@ -119,11 +119,31 @@ func TestDB_EachToStruct_RetErr(t *testing.T) {
 	require.EqualError(t, err, "some err")
 }
 
-func TestDB_ChunkCountErr(t *testing.T) {
-	err := db.Table("").Chunk(&DataStruct{}, 1, func(rows []any) bool {
+func TestDB_ChunkErrs(t *testing.T) {
+	_, err := db.Truncate(TestTable)
+	require.NoError(t, err)
+
+	err = db.Table(TestTable).Insert(data)
+	require.NoError(t, err)
+
+	err = db.Table("").Chunk(&DataStruct{}, 1, func(rows []any) bool {
 		return false
 	})
 	require.EqualError(t, err, "pq: zero-length delimited identifier at or near \"\"\"\"")
+
+	var nilPtr *int = nil
+	err = db.Table(TestTable).Chunk(nilPtr, 1, func(rows []any) bool {
+		return false
+	})
+	require.EqualError(t, err, "cannot decode into nil type *int")
+
+	err = db.Table(TestTable).Chunk(nilPtr, 2, func(rows []any) bool {
+		return false
+	})
+	require.EqualError(t, err, "cannot decode into nil type *int")
+
+	_, err = db.Truncate(TestTable)
+	require.NoError(t, err)
 }
 
 func TestInsert(t *testing.T) {
