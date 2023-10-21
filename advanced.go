@@ -33,32 +33,35 @@ func (r *DB) Find(src any, id uint64) error {
 	return r.Where("id", "=", id).First(src)
 }
 
-// Pluck getting values of a particular column and place them into slice
-func (r *DB) Pluck(column string) (val []interface{}, err error) {
-	res, err := r.Get()
+// Pluck getting values of a particular column(s) of a struct and place them into slice
+func (r *DB) Pluck(src any) ([]any, error) {
+	res, err := r.eachToStructRows(src, r.Builder.offset, r.Builder.limit)
 	if err != nil {
 		return nil, err
 	}
 
-	val = make([]interface{}, len(res))
-	for k, m := range res {
-		val[k] = m[column]
-	}
-
-	return
+	return res, nil
 }
 
 // PluckMap getting values of a particular key/value columns and place them into map
-func (r *DB) PluckMap(colKey, colValue string) (val []map[interface{}]interface{}, err error) {
-	res, err := r.Get()
+// values of the returning map is a structure passed as src and filled with data from DB
+func (r *DB) PluckMap(src any, colKey, colValue string) (val []map[any]any, err error) {
+	resource := reflect.ValueOf(src).Elem()
+	if err = validateFields(resource, src, []string{colKey, colValue}); err != nil {
+		return nil, err
+	}
+
+	res, err := r.eachToStructRows(src, r.Builder.offset, r.Builder.limit)
 	if err != nil {
 		return nil, err
 	}
 
-	val = make([]map[interface{}]interface{}, len(res))
+	val = make([]map[any]any, len(res))
 	for k, m := range res {
-		val[k] = make(map[interface{}]interface{})
-		val[k][m[colKey]] = m[colValue]
+		val[k] = make(map[any]any)
+
+		fieldKeyData := getFieldValue(m, colKey)
+		val[k][fieldKeyData] = reflect.ValueOf(m).Interface()
 	}
 
 	return
@@ -99,8 +102,8 @@ func (r *DB) Decrement(column string, on uint64) (int64, error) {
 
 // increments or decrements depending on sign
 func (r *DB) incrDecr(column, sign string, on uint64) (int64, error) {
-	builder := r.Builder
-	if builder.table == "" {
+	bldr := r.Builder
+	if bldr.table == "" {
 		return 0, errTableCallBeforeOp
 	}
 

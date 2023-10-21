@@ -34,6 +34,7 @@ library [![Tweet](http://jpillora.com/github-twitter-button/img/tweet.png)](http
 * [Create table](#user-content-create-table)
 * [Add / Modify / Drop columns](#user-content-add--modify--drop-columns)
 * [Chunking Results](#user-content-chunking-results)
+* [Pluck / PluckMap](#user-content-pluck--pluckmap)
 
 ## Installation
 
@@ -438,13 +439,35 @@ dataStruct := &DataStructUser{}
 err = db.Table(UsersTable).Select("name", "points").Chunk(dataStruct, 100, func(users []any) bool {
     for _, v := range users {
         user := v.(DataStructUser) 
-		// your code goes here e.g.:
+        // your code goes here e.g.:
         sumOfPoints += user.Points
     }
 	
     // or you can return false here to stop running chunks 
     return true
 })
+```
+
+## Pluck / PluckMap
+
+If you would like to get values of a particular column(s) of a struct and place them into slice - use `Pluck` method:
+```go
+    dataStruct := &DataStructUser{}
+    res, err := db.Table(UsersTable).Pluck(dataStruct)
+    for k, v := range res {
+        val := v.(DataStructUser)
+        fmt.Println(val.Name) // f.e.: Alex Shmidt
+    }
+	
+    // or use a PluckMap method to aggregate key/value pairs to a map
+    res, err := db.Table(UsersTable).PluckMap(dataStruct, "name", "points")
+    for k, m := range res {
+        for key, value := range m {
+            keyVal := key.(string)
+            valueVal := value.(DataStructUser) 
+            // rest of the code ...
+        }
+    }
 ```
 
 PS Why use buildsqlx? Because it is simple and fast, yet versatile. The builder code-style has been inherited from greatest web-frameworks, so u can easily query anything from db. 

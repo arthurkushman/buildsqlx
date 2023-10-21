@@ -153,14 +153,10 @@ func TestInsert(t *testing.T) {
 	err = db.Table(TestTable).Insert(data)
 	require.NoError(t, err)
 
-	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Get()
+	dataStruct := &DataStruct{}
+	err = db.Table(TestTable).Select("foo", "bar", "baz").ScanStruct(dataStruct)
 	require.NoError(t, err)
-
-	for k, mapVal := range dataMap {
-		for _, v := range res {
-			require.Equal(t, v[k], mapVal)
-		}
-	}
+	require.Equal(t, data, data)
 
 	_, err = db.Truncate(TestTable)
 	require.NoError(t, err)
@@ -209,10 +205,12 @@ func TestWhereOnly(t *testing.T) {
 
 	err = db.Table(TestTable).InsertBatch(batchDataStruct)
 	require.NoError(t, err)
-	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).Get()
+
+	dataStruct := &DataStruct{}
+	err = db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).ScanStruct(dataStruct)
 	require.NoError(t, err)
 
-	require.Equal(t, res[0]["foo"], cmp)
+	require.Equal(t, dataStruct.Foo, cmp)
 
 	_, err = db.Truncate(TestTable)
 	require.NoError(t, err)
@@ -226,10 +224,13 @@ func TestWhereAndOr(t *testing.T) {
 
 	err = db.Table(TestTable).InsertBatch(batchDataStruct)
 	require.NoError(t, err)
-	res, err := db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).AndWhere("bar", "!=", "foo").OrWhere("baz", "=", 123).Get()
-	require.NoError(t, err)
 
-	require.Equal(t, res[0]["foo"], cmp)
+	dataStruct := &DataStruct{}
+	err = db.Table(TestTable).Select("foo", "bar", "baz").Where("foo", "=", cmp).
+		AndWhere("bar", "!=", "foo").
+		OrWhere("baz", "=", 123).ScanStruct(dataStruct)
+	require.NoError(t, err)
+	require.Equal(t, dataStruct.Foo, cmp)
 
 	_, err = db.Truncate(TestTable)
 	require.NoError(t, err)
@@ -267,6 +268,14 @@ type DataStructUser struct {
 	Points int64
 }
 
+type DataStructUserPosts struct {
+	ID     int64
+	Name   *string
+	Post   *string
+	Points *int64
+	UserID *int64 `db:"user_id"`
+}
+
 var batchUsersStruct = []DataStructUser{
 	0: {ID: int64(1), Name: "Alex Shmidt", Points: int64(123)},
 	1: {ID: int64(2), Name: "Darth Vader", Points: int64(1234)},
@@ -295,13 +304,24 @@ func TestJoins(t *testing.T) {
 	err = db.Table(PostsTable).InsertBatch(posts)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name", "post", "user_id").LeftJoin(
-		PostsTable, UsersTable+".id", "=", PostsTable+".user_id").Get()
+	var dataStructs []DataStructUserPosts
+	dataStruct := &DataStructUserPosts{}
+	err = db.Table(UsersTable).Select("name", "post", "user_id").LeftJoin(
+		PostsTable, UsersTable+".id", "=", PostsTable+".user_id").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+		return nil
+	})
 	require.NoError(t, err)
 
-	for k, val := range res {
-		require.Equal(t, val["name"], batchUsers[k].Name)
-		require.Equal(t, val["user_id"], batchUsers[k].ID)
+	for k, val := range dataStructs {
+		require.Equal(t, *val.Name, batchUsers[k].Name)
+		require.Equal(t, *val.Post, *posts[k].Post)
+		require.Equal(t, *val.UserID, *posts[k].UserID)
 	}
 
 	_, err = db.Truncate(UsersTable)
@@ -323,16 +343,19 @@ func TestUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, obj := range rowsToUpdate {
-		err := db.Table(TestTable).Insert(obj.insert)
+		err = db.Table(TestTable).Insert(obj.insert)
 		require.NoError(t, err)
 
 		rows, err := db.Table(TestTable).Where("foo", "=", "foo foo foo").Update(obj.update)
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, rows, int64(1))
 
-		res, err := db.Table(TestTable).Select("foo").Where("foo", "=", obj.update.Foo).Get()
+		dataStruct := &DataStruct{}
+		err = db.Table(TestTable).Select("foo").Where("foo", "=", obj.update.Foo).
+			ScanStruct(dataStruct)
+
 		require.NoError(t, err)
-		require.Equal(t, obj.update.Foo, res[0]["foo"])
+		require.Equal(t, obj.update.Foo, dataStruct.Foo)
 	}
 
 	_, err = db.Truncate(TestTable)
@@ -381,19 +404,19 @@ func TestDB_Increment_Decrement(t *testing.T) {
 		_, err = db.Table(TestTable).Increment("baz", obj.incr)
 		require.NoError(t, err)
 
-		res, err := db.Table(TestTable).Select("baz").Where("baz", "=", obj.incrRes).Get()
+		dataStruct := &DataStruct{}
+		err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.incrRes).
+			ScanStruct(dataStruct)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(res), 1)
-		require.Equal(t, res[0]["baz"], int64(obj.incrRes))
+		require.Equal(t, *dataStruct.Baz, int64(obj.incrRes))
 
 		_, err = db.Table(TestTable).Decrement("baz", obj.decr)
 		require.NoError(t, err)
 
-		res, err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.decrRes).Get()
+		err = db.Table(TestTable).Select("baz").Where("baz", "=", obj.decrRes).ScanStruct(dataStruct)
 		require.NoError(t, err)
 
-		require.GreaterOrEqual(t, len(res), 1)
-		require.Equal(t, res[0]["baz"], int64(obj.decrRes))
+		require.Equal(t, *dataStruct.Baz, int64(obj.decrRes))
 	}
 
 	_, err = db.Truncate(TestTable)
@@ -427,10 +450,11 @@ func TestDB_Replace(t *testing.T) {
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, rows, int64(1))
 
-		res, err := db.Table(TestTable).Select("foo").Where("baz", "=", obj.replace.Baz).Get()
+		dataStruct := &DataStruct{}
+		err = db.Table(TestTable).Select("foo").Where("baz", "=", obj.replace.Baz).
+			ScanStruct(dataStruct)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(res), 1)
-		require.Equal(t, res[0]["foo"], obj.replace.Foo)
+		require.Equal(t, dataStruct.Foo, obj.replace.Foo)
 	}
 
 	_, err = db.Truncate(TestTable)
@@ -672,15 +696,17 @@ func TestDB_Pluck(t *testing.T) {
 
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
-	res, err := db.Table(UsersTable).Pluck("name")
+
+	dataStruct := &DataStructUser{}
+	res, err := db.Table(UsersTable).Pluck(dataStruct)
 	require.NoError(t, err)
 
 	for k, v := range res {
-		resVal := v.(string)
-		require.Equal(t, batchUsers[k].Name, resVal)
+		resVal := v.(DataStructUser)
+		require.Equal(t, batchUsers[k].Name, resVal.Name)
 	}
 
-	_, err = db.Table("nonexistent").Pluck("name")
+	_, err = db.Table("nonexistent").Pluck(dataStruct)
 	require.Error(t, err)
 
 	_, err = db.Truncate(UsersTable)
@@ -693,20 +719,25 @@ func TestDB_PluckMap(t *testing.T) {
 
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
-	res, err := db.Table(UsersTable).PluckMap("name", "points")
+
+	dataStruct := &DataStructUser{}
+	res, err := db.Table(UsersTable).PluckMap(dataStruct, "name", "points")
 	require.NoError(t, err)
 
 	for k, m := range res {
 		for key, value := range m {
 			keyVal := key.(string)
-			valueVal := value.(int64)
+			valueVal := value.(DataStructUser)
 			require.Equal(t, batchUsers[k].Name, keyVal)
-			require.Equal(t, batchUsers[k].Points, valueVal)
+			require.Equal(t, batchUsers[k].Points, valueVal.Points)
 		}
 	}
 
-	_, err = db.Table("nonexistent").PluckMap("name", "points")
+	_, err = db.Table("nonexistent").PluckMap(dataStruct, "name", "points")
 	require.Error(t, err)
+
+	_, err = db.Table("nonexistent").PluckMap(dataStruct, "namee", "points")
+	require.EqualError(t, err, "field 'Namee' not found in struct")
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -831,9 +862,20 @@ func TestDB_GroupByHaving(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("points").GroupBy("points").Having("points", ">=", 123).Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("points").GroupBy("points").
+		Having("points", ">=", 123).EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), len(batchUsers)-1)
+	require.Equal(t, len(dataStructs), len(batchUsers)-1)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -846,9 +888,21 @@ func TestDB_HavingRaw(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("points").GroupBy("points").HavingRaw("points > 123").AndHavingRaw("points < 12345").OrHavingRaw("points = 0").Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("points").GroupBy("points").
+		HavingRaw("points > 123").AndHavingRaw("points < 12345").OrHavingRaw("points = 0").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+			return nil
+		})
 	require.NoError(t, err)
-	require.Equal(t, len(batchUsers)-3, len(res))
+	require.Equal(t, len(batchUsers)-3, len(dataStructs))
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -867,36 +921,86 @@ func TestDB_AllJoins(t *testing.T) {
 	err = db.Table(PostsTable).InsertBatch(batchPosts)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name", "post", "user_id").InnerJoin(PostsTable, UsersTable+".id",
-		"=", PostsTable+".user_id").Get()
+	dataStruct := &DataStructUserPosts{}
+	var dataStructs []DataStructUserPosts
+	err = db.Table(UsersTable).Select("name", "post", "user_id").InnerJoin(PostsTable, UsersTable+".id",
+		"=", PostsTable+".user_id").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), len(batchPosts)-1)
 
-	require.Equal(t, len(res), len(batchPosts)-1)
+	dataStruct = &DataStructUserPosts{}
+	dataStructs = []DataStructUserPosts{}
+	err = db.Table(PostsTable).Select("name", "post", "user_id").RightJoin(UsersTable, PostsTable+".user_id",
+		"=", UsersTable+".id").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
 
-	res, err = db.Table(PostsTable).Select("name", "post", "user_id").RightJoin(UsersTable, PostsTable+".user_id",
-		"=", UsersTable+".id").Get()
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), len(batchUsers))
 
-	require.Equal(t, len(res), len(batchUsers))
+	dataStruct = &DataStructUserPosts{}
+	dataStructs = []DataStructUserPosts{}
+	err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, UsersTable+".id",
+		"=", PostsTable+".user_id").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
 
-	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable, UsersTable+".id",
-		"=", PostsTable+".user_id").Get()
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), len(batchUsers)+1)
 
-	require.Equal(t, len(res), len(batchUsers)+1)
+	dataStruct = &DataStructUserPosts{}
+	dataStructs = []DataStructUserPosts{}
+	err = db.Table(UsersTable).Select("name", "post", "user_id").FullOuterJoin(PostsTable,
+		UsersTable+".id", "=", PostsTable+".user_id").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
 
-	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(PostsTable,
-		UsersTable+".id", "=", PostsTable+".user_id").Get()
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
-
-	require.Equal(t, len(res), len(batchUsers)+1)
+	require.Equal(t, len(dataStructs), len(batchUsers)+1)
 
 	// note InRandomOrder check
-	res, err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(
-		PostsTable, UsersTable+".id", "=", PostsTable+".user_id").InRandomOrder().Get()
-	require.NoError(t, err)
+	dataStruct = &DataStructUserPosts{}
+	dataStructs = []DataStructUserPosts{}
+	err = db.Table(UsersTable).Select("name", "post", "user_id").FullJoin(
+		PostsTable, UsersTable+".id", "=", PostsTable+".user_id").InRandomOrder().EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
 
-	require.Equal(t, len(res), len(batchUsers)+1)
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), len(batchUsers)+1)
 
 	_, err = db.Truncate(PostsTable)
 	require.NoError(t, err)
@@ -973,9 +1077,21 @@ func TestDB_WhereRaw(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 15").OrWhereRaw("points > 1234").Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").WhereRaw("LENGTH(name) > 15").
+		OrWhereRaw("points > 1234").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	require.Equal(t, len(dataStructs), 2)
 
 	cnt, err := db.Table(UsersTable).WhereRaw("points > 123").AndWhereRaw("points < 12345").Count()
 	require.NoError(t, err)
@@ -992,9 +1108,20 @@ func TestDB_Offset(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Offset(2).Limit(10).Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Offset(2).Limit(10).EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	require.Equal(t, len(dataStructs), 2)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -1030,24 +1157,63 @@ func TestDB_WhereIn(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("id", []int64{1, 2}).Get()
-	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).
+		OrWhereIn("id", []int64{1, 2}).EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
 
-	res, err = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).AndWhereIn("id", []int64{1, 2}).Get()
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	require.Equal(t, len(dataStructs), 2)
+
+	dataStruct = &DataStructUser{}
+	dataStructs = []DataStructUser{}
+	err = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).
+		AndWhereIn("id", []int64{1, 2}).EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), 2)
 
 	require.Panicsf(t, func() {
-		_, _ = db.Table(UsersTable).Select("name").WhereIn("points", DataStruct{}).AndWhereIn("id", []int64{1, 2}).Get()
+		_ = db.Table(UsersTable).Select("name").WhereIn("points", DataStruct{}).
+			AndWhereIn("id", []int64{1, 2})
 	}, "interfaceToSlice() given a non-slice type")
 
 	require.Panicsf(t, func() {
-		_, _ = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).AndWhereIn("id", DataStruct{}).Get()
+		_ = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).
+			AndWhereIn("id", DataStruct{})
 	}, "interfaceToSlice() given a non-slice type")
 
 	require.Panicsf(t, func() {
-		_, _ = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("id", DataStruct{}).Get()
+		_ = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).
+			OrWhereIn("id", DataStruct{})
+	}, "interfaceToSlice() given a non-slice type")
+
+	require.Panicsf(t, func() {
+		_ = db.Table(UsersTable).Select("name").WhereIn("points", DataStruct{}).AndWhereIn("id", []int64{1, 2})
+	}, "interfaceToSlice() given a non-slice type")
+
+	require.Panicsf(t, func() {
+		_ = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).AndWhereIn("id", DataStruct{})
+	}, "interfaceToSlice() given a non-slice type")
+
+	require.Panicsf(t, func() {
+		_ = db.Table(UsersTable).Select("name").WhereIn("points", []int64{123, 1234}).OrWhereIn("id", DataStruct{})
 	}, "interfaceToSlice() given a non-slice type")
 
 	_, err = db.Truncate(UsersTable)
@@ -1060,24 +1226,51 @@ func TestDB_WhereNotIn(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).OrWhereNotIn("id", []int64{1, 2}).Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).
+		OrWhereNotIn("id", []int64{1, 2}).EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	require.Equal(t, len(dataStructs), 2)
 
 	require.Panicsf(t, func() {
-		_, _ = db.Table(UsersTable).Select("name").WhereNotIn("points", DataStruct{}).OrWhereNotIn("id", []int64{1, 2}).Get()
+		_ = db.Table(UsersTable).Select("name").WhereNotIn("points", DataStruct{}).
+			OrWhereNotIn("id", []int64{1, 2})
 	}, "interfaceToSlice() given a non-slice type")
 
 	require.Panicsf(t, func() {
-		_, _ = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).OrWhereNotIn("id", DataStruct{}).Get()
+		_ = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).
+			OrWhereNotIn("id", DataStruct{})
 	}, "interfaceToSlice() given a non-slice type")
 
-	res, err = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).AndWhereNotIn("id", []int64{1, 2}).Get()
+	dataStruct = &DataStructUser{}
+	dataStructs = []DataStructUser{}
+	err = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).
+		AndWhereNotIn("id", []int64{1, 2}).EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	require.Equal(t, len(dataStructs), 2)
 
 	require.Panicsf(t, func() {
-		_, _ = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).AndWhereNotIn("id", DataStruct{}).Get()
+		_ = db.Table(UsersTable).Select("name").WhereNotIn("points", []int64{123, 1234}).
+			AndWhereNotIn("id", DataStruct{})
 	}, "interfaceToSlice() given a non-slice type")
 
 	_, err = db.Truncate(UsersTable)
@@ -1091,14 +1284,38 @@ func TestDB_WhereNull(t *testing.T) {
 	err = db.Table(PostsTable).InsertBatch(batchPosts)
 	require.NoError(t, err)
 
-	res, err := db.Table(PostsTable).Select("title").WhereNull("post").AndWhereNull("user_id").Get()
+	dataStruct := &DataStructPost{}
+	var dataStructs []DataStructPost
+	err = db.Table(PostsTable).Select("title").WhereNull("post").AndWhereNull("user_id").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
 	db.Dump()
 	require.NoError(t, err)
-	require.Equal(t, len(res), 1)
+	require.Equal(t, len(dataStructs), 1)
 
-	res, err = db.Table(PostsTable).Select("title").WhereNull("post").OrWhereNull("user_id").Get()
+	dataStruct = &DataStructPost{}
+	dataStructs = []DataStructPost{}
+	err = db.Table(PostsTable).Select("title").WhereNull("post").OrWhereNull("user_id").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 1)
+	require.Equal(t, len(dataStructs), 1)
 
 	_, err = db.Truncate(PostsTable)
 	require.NoError(t, err)
@@ -1111,18 +1328,54 @@ func TestDB_WhereNotNull(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").WhereNotNull("points").AndWhereNotNull("name").Get()
-	require.NoError(t, err)
-	require.Equal(t, len(res), len(batchUsers))
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").WhereNotNull("points").
+		AndWhereNotNull("name").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
 
-	res, err = db.Table(UsersTable).Select("name").WhereNotNull("points").OrWhereNotNull("name").Get()
-	require.NoError(t, err)
-	require.Equal(t, len(res), len(batchUsers))
+		dataStructs = append(dataStructs, *dataStruct)
 
-	res, err = db.Table(UsersTable).Select("name").Where("id", "=", 1).
-		OrWhere("id", "=", 2).AndWhereNotNull("points").Get()
+		return nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, len(res), 2)
+	require.Equal(t, len(dataStructs), len(batchUsers))
+
+	dataStruct = &DataStructUser{}
+	dataStructs = []DataStructUser{}
+	err = db.Table(UsersTable).Select("name").WhereNotNull("points").OrWhereNotNull("name").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
+	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), len(batchUsers))
+
+	dataStruct = &DataStructUser{}
+	dataStructs = []DataStructUser{}
+	err = db.Table(UsersTable).Select("name").Where("id", "=", 1).
+		OrWhere("id", "=", 2).AndWhereNotNull("points").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
+	require.NoError(t, err)
+	require.Equal(t, len(dataStructs), 2)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -1135,9 +1388,21 @@ func TestDB_LockForUpdate(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").LockForUpdate().Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").LockForUpdate().
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
 	require.NoError(t, err)
-	require.Equal(t, len(res), len(batchUsers))
+	require.Equal(t, len(dataStructs), len(batchUsers))
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -1150,9 +1415,21 @@ func TestDB_UnionAll(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").UnionAll().Table(UsersTable).Select("name").Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").UnionAll().Table(UsersTable).Select("name").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
 	require.NoError(t, err)
-	require.Equal(t, len(res), len(batchUsers)*2)
+	require.Equal(t, len(dataStructs), len(batchUsers)*2)
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -1168,10 +1445,22 @@ func TestDB_FullOuterJoin(t *testing.T) {
 	err = db.Table(UsersTable).InsertBatch(batchUsers)
 	require.NoError(t, err)
 
-	res, err := db.Table(UsersTable).Select("name").FullOuterJoin(PostsTable, UsersTable+".id", "=",
-		PostsTable+".user_id").Get()
+	dataStruct := &DataStructUser{}
+	var dataStructs []DataStructUser
+	err = db.Table(UsersTable).Select("name").FullOuterJoin(PostsTable, UsersTable+".id", "=",
+		PostsTable+".user_id").
+		EachToStruct(func(rows *sql.Rows) error {
+			err = db.Next(rows, dataStruct)
+			if err != nil {
+				return err
+			}
+
+			dataStructs = append(dataStructs, *dataStruct)
+
+			return nil
+		})
 	require.NoError(t, err)
-	require.Equal(t, len(res), len(batchUsers))
+	require.Equal(t, len(dataStructs), len(batchUsers))
 
 	_, err = db.Truncate(UsersTable)
 	require.NoError(t, err)
@@ -1289,7 +1578,18 @@ func TestDB_ChunkBuilderTableErr(t *testing.T) {
 	err = db.InsertBatch(batchUsers)
 	require.Error(t, err, errTableCallBeforeOp)
 
-	_, err = db.Select("foo", "bar", "baz").Get()
+	dataStruct := &DataStruct{}
+	var dataStructs []DataStruct
+	err = db.Select("foo", "bar", "baz").EachToStruct(func(rows *sql.Rows) error {
+		err = db.Next(rows, dataStruct)
+		if err != nil {
+			return err
+		}
+
+		dataStructs = append(dataStructs, *dataStruct)
+
+		return nil
+	})
 	require.Error(t, err, errTableCallBeforeOp)
 
 	err = db.Insert(dataMap)
