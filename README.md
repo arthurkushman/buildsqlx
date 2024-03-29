@@ -91,8 +91,8 @@ err = db.Table("users").Select("name", "post", "user_id").InRandomOrder().ScanSt
 
 ## GroupBy / Having
 
-The GroupBy and Having methods may be used to group the query results.
-The having method's signature is similar to that of the where method:
+The `GroupBy` and `Having` methods may be used to group the query results.
+The having method's signature is similar to that of the `Where` method:
 
 ```go
 err = db.table("users").GroupBy("account_id").Having("account_id", ">", 100).ScanStruct(dataStruct)
@@ -100,7 +100,7 @@ err = db.table("users").GroupBy("account_id").Having("account_id", ">", 100).Sca
 
 ## Where, AndWhere, OrWhere clauses
 
-You may use the where method on a query builder instance to add where clauses to the query.
+You may use the `Where` method on a query builder instance to add where clauses to the query.
 The most basic call to where requires three arguments.
 The first argument is the name of the column.
 The second argument is an operator, which can be any of the database's supported operators.
@@ -111,11 +111,11 @@ err = db.Table("table1").Select("foo", "bar", "baz").Where("foo", "=", cmp).AndW
 ```
 
 You may chain where constraints together as well as add or clauses to the query.
-The orWhere method accepts the same arguments as the where method.
+The `OrWhere` method accepts the same arguments as the `Where` method.
 
 ## WhereIn / WhereNotIn
 
-The whereIn method verifies that a given column's value is contained within the given slice:
+The `WhereIn` method verifies that a given column's value is contained within the given slice:
 
 ```go
 err = db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name", []string{"John", "Paul"}).ScanStruct(dataStruct)
@@ -123,7 +123,7 @@ err = db.Table("table1").WhereIn("id", []int64{1, 2, 3}).OrWhereIn("name", []str
 
 ## WhereNull / WhereNotNull
 
-The whereNull method verifies that the value of the given column is NULL:
+The `WhereNull` method verifies that the value of the given column is `NULL`:
 
 ```go
 err = db.Table("posts").WhereNull("points").OrWhereNotNull("title")..ScanStruct(dataStruct)
@@ -132,7 +132,7 @@ err = db.Table("posts").WhereNull("points").OrWhereNotNull("title")..ScanStruct(
 ## Left / Right / Cross / Inner / Left Outer Joins
 
 The query builder may also be used to write join statements.
-To perform a basic "inner join", you may use the InnerJoin method on a query builder instance.
+To perform a basic "inner join", you may use the `InnerJoin` method on a query builder instance.
 The first argument passed to the join method is the name of the table you need to join to,
 while the remaining arguments specify the column constraints for the join.
 You can even join to multiple tables in a single query:
@@ -151,8 +151,8 @@ err = db.Table("users").Select("name", "post", "user_id").LeftJoin("posts", "use
 
 ## Inserts
 
-The query builder also provides an insert method for inserting records into the database table.
-The Insert/InsertBatch methods accept a structure (or slice of structs) of column names and values:
+The query builder also provides an `Insert` method for inserting records into the database table.
+The `Insert/InsertBatch` methods accept a structure (or slice of structs) of column names and values:
 
 ```go
 // insert without getting id
@@ -335,7 +335,7 @@ err = db.Table(UsersTable).Select("name").WhereNotBetween("points", 123, 123456)
 
 ## Determining If Records Exist
 
-Instead of using the count method to determine if any records exist that match your query's constraints,
+Instead of using the `Count` method to determine if any records exist that match your query's constraints,
 you may use the exists and doesntExist methods:
 
 ```go
