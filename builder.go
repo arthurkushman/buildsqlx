@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	joinInner = "INNER"
+	sqlKeyWordJoinInner = "INNER"
 	//JoinCross     = "CROSS"
-	joinLeft      = "LEFT"
-	joinRight     = "RIGHT"
-	joinFull      = "FULL"
-	joinFullOuter = "FULL OUTER"
-	where         = " WHERE "
-	and           = " AND "
-	or            = " OR "
+	sqlKeyWordJoinLeft      = "LEFT"
+	sqlKeyWordJoinRight     = "RIGHT"
+	sqlKeyWordJoinFull      = "FULL"
+	sqlKeyWordJoinFullOuter = "FULL OUTER"
+	sqlKeyWordWhere         = " WHERE "
+	sqlKeyWordAnd           = " AND "
+	sqlKeyWordOr            = " OR "
 )
 
 const (
@@ -159,13 +159,13 @@ func (r *DB) HavingRaw(raw string) *DB {
 
 // OrHavingRaw accepts custom string to apply it to having clause with logical OR
 func (r *DB) OrHavingRaw(raw string) *DB {
-	r.Builder.having += or + raw
+	r.Builder.having += sqlKeyWordOr + raw
 	return r
 }
 
 // AndHavingRaw accepts custom string to apply it to having clause with logical OR
 func (r *DB) AndHavingRaw(raw string) *DB {
-	r.Builder.having += and + raw
+	r.Builder.having += sqlKeyWordAnd + raw
 	return r
 }
 
@@ -183,17 +183,17 @@ func (r *DB) SelectRaw(raw string) *DB {
 
 // InnerJoin joins tables by getting elements if found in both
 func (r *DB) InnerJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(joinInner, table, left+operator+right)
+	return r.buildJoin(sqlKeyWordJoinInner, table, left+operator+right)
 }
 
 // LeftJoin joins tables by getting elements from left without those that null on the right
 func (r *DB) LeftJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(joinLeft, table, left+operator+right)
+	return r.buildJoin(sqlKeyWordJoinLeft, table, left+operator+right)
 }
 
 // RightJoin joins tables by getting elements from right without those that null on the left
 func (r *DB) RightJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(joinRight, table, left+operator+right)
+	return r.buildJoin(sqlKeyWordJoinRight, table, left+operator+right)
 }
 
 // CrossJoin joins tables by getting intersection of sets
@@ -204,12 +204,12 @@ func (r *DB) RightJoin(table, left, operator, right string) *DB {
 
 // FullJoin joins tables by getting all elements of both sets
 func (r *DB) FullJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(joinFull, table, left+operator+right)
+	return r.buildJoin(sqlKeyWordJoinFull, table, left+operator+right)
 }
 
 // FullOuterJoin joins tables by getting an outer sets
 func (r *DB) FullOuterJoin(table, left, operator, right string) *DB {
-	return r.buildJoin(joinFullOuter, table, left+operator+right)
+	return r.buildJoin(sqlKeyWordJoinFullOuter, table, left+operator+right)
 }
 
 // Union joins multiple queries omitting duplicate records
@@ -269,32 +269,32 @@ func (r *DB) buildWhere(prefix, operand, operator string, val any) *DB {
 
 // WhereBetween sets the clause BETWEEN 2 values
 func (r *DB) WhereBetween(col string, val1, val2 any) *DB {
-	return r.buildWhere("", col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
+	return r.buildWhere("", col, sqlOperatorBetween, convertToStr(val1)+sqlKeyWordAnd+convertToStr(val2))
 }
 
 // OrWhereBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereBetween(col string, val1, val2 any) *DB {
-	return r.buildWhere(sqlOperatorOr, col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
+	return r.buildWhere(sqlOperatorOr, col, sqlOperatorBetween, convertToStr(val1)+sqlKeyWordAnd+convertToStr(val2))
 }
 
 // AndWhereBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereBetween(col string, val1, val2 any) *DB {
-	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorBetween, convertToStr(val1)+and+convertToStr(val2))
+	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorBetween, convertToStr(val1)+sqlKeyWordAnd+convertToStr(val2))
 }
 
 // WhereNotBetween sets the clause NOT BETWEEN 2 values
 func (r *DB) WhereNotBetween(col string, val1, val2 any) *DB {
-	return r.buildWhere("", col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
+	return r.buildWhere("", col, sqlOperatorNotBetween, convertToStr(val1)+sqlKeyWordAnd+convertToStr(val2))
 }
 
 // OrWhereNotBetween sets the clause OR BETWEEN 2 values
 func (r *DB) OrWhereNotBetween(col string, val1, val2 any) *DB {
-	return r.buildWhere(sqlOperatorOr, col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
+	return r.buildWhere(sqlOperatorOr, col, sqlOperatorNotBetween, convertToStr(val1)+sqlKeyWordAnd+convertToStr(val2))
 }
 
 // AndWhereNotBetween sets the clause AND BETWEEN 2 values
 func (r *DB) AndWhereNotBetween(col string, val1, val2 any) *DB {
-	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorNotBetween, convertToStr(val1)+and+convertToStr(val2))
+	return r.buildWhere(sqlOperatorAnd, col, sqlOperatorNotBetween, convertToStr(val1)+sqlKeyWordAnd+convertToStr(val2))
 }
 
 func convertToStr(val any) string {
@@ -316,19 +316,19 @@ func convertToStr(val any) string {
 
 // WhereRaw accepts custom string to apply it to where clause
 func (r *DB) WhereRaw(raw string) *DB {
-	r.Builder.where = where + raw
+	r.Builder.where = sqlKeyWordWhere + raw
 	return r
 }
 
 // OrWhereRaw accepts custom string to apply it to where clause with logical OR
 func (r *DB) OrWhereRaw(raw string) *DB {
-	r.Builder.where += or + raw
+	r.Builder.where += sqlKeyWordOr + raw
 	return r
 }
 
 // AndWhereRaw accepts custom string to apply it to where clause with logical OR
 func (r *DB) AndWhereRaw(raw string) *DB {
-	r.Builder.where += and + raw
+	r.Builder.where += sqlKeyWordAnd + raw
 	return r
 }
 
