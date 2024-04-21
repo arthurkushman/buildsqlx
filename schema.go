@@ -83,6 +83,7 @@ type column struct {
 	Default         *string
 	ForeignKey      *string
 	IdxName         string
+	NewIdxName      string
 	Comment         *string
 	Collation       *string
 	Op              string
@@ -231,9 +232,13 @@ func buildColumnOptions(col *column) (colSchema string) {
 
 // build index for table on particular column depending on an index type
 func composeIndex(tblName string, col *column) string {
-	if col.IsIndex {
+	if col.IsIndex && col.NewIdxName == "" {
 		return "CREATE INDEX " + applyIdxConcurrency(col.IsIdxConcurrent) + applyExistence(col.IfExists) +
 			col.IdxName + " ON " + tblName + " (" + col.Name + ")" + applyIncludes(col.Includes)
+	}
+
+	if col.NewIdxName != "" {
+		return "ALTER INDEX " + col.IdxName + " RENAME TO " + col.NewIdxName
 	}
 
 	if col.IsUnique {
@@ -406,6 +411,13 @@ func (t *Table) TableComment(cmt string) {
 func (t *Table) Index(idxName string) *Table {
 	t.columns[len(t.columns)-1].IdxName = idxName
 	t.columns[len(t.columns)-1].IsIndex = true
+	return t
+}
+
+// RenameIndex changes the name of a particular index
+func (t *Table) RenameIndex(idxName, newName string) *Table {
+	t.columns = append(t.columns, &column{IdxName: idxName, IsIndex: true, NewIdxName: newName})
+
 	return t
 }
 
@@ -591,9 +603,10 @@ func (r *DB) modifyTable(t *Table) (res sql.Result, err error) {
 			query += composeDrop(t.tblName, col)
 		} else { // create new column/comment/index or just add comments indices
 			isCol, _ := r.HasColumns(DefaultSchema, t.tblName, col.Name)
-			if !isCol {
+			if !isCol && col.NewIdxName == "" {
 				query += composeAddColumn(t.tblName, col)
 			}
+
 			indices = append(indices, composeIndex(t.tblName, col))
 			comments = append(comments, composeComment(t.tblName, col))
 		}

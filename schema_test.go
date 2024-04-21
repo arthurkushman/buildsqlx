@@ -94,6 +94,7 @@ func TestTable_BigIncrements(t *testing.T) {
 		table.String("title", 64).IfNotExists().Index("ttl_idx_if_not_exists").IfNotExists()
 		table.DropIndex("idx_price")
 		table.DropIndex("foo").IfExists()
+		table.RenameIndex("ttl_idx_if_not_exists", "ttl_idx_renamed")
 
 		return nil
 	})
