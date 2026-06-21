@@ -1,6 +1,6 @@
 module github.com/arthurkushman/buildsqlx
 
-go 1.18
+go 1.24
 
 require (
 	github.com/fatih/structs v1.1.0

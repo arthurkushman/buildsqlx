@@ -318,6 +318,10 @@ func (r *builder) buildClauses() string {
 
 // composes WHERE clause string for particular query stmt
 func composeWhere(whereBindings []map[string]any, startedAt int) string {
+	if len(whereBindings) == 0 {
+		return ""
+	}
+
 	where := " WHERE "
 	i := startedAt
 	for _, m := range whereBindings {
